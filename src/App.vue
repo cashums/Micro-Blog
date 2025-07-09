@@ -5,11 +5,9 @@ import NavigationBar from './components/NavigationBar.vue'
 
 <template>
   <header>
-    <img alt="Vue logo" class="logo" src="@/assets/logo.svg" width="125" height="125" />
+    <img alt="CapsLock logo" class="logo" src="@/assets/logo.png" width="190" height="125" />
 
-    <div class="wrapper">
-      <NavigationBar/>
-    </div>
+    <NavigationBar/>
   </header>
 
   <RouterView/>
@@ -17,20 +15,16 @@ import NavigationBar from './components/NavigationBar.vue'
 
 <style scoped>
 header {
-  line-height: 1.5;
-  max-height: 100vh;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem;
 }
 
 .logo {
-  display: block;
-  margin: 0 auto 2rem;
-}
-
-nav {
-  width: 100%;
-  font-size: 12px;
-  text-align: center;
-  margin-top: 2rem;
+  position: fixed;
+  left: 0;
+  top: 0;
 }
 
 nav a.router-link-exact-active {
@@ -59,7 +53,7 @@ nav a:first-of-type {
   }
 
   .logo {
-    margin: 0 2rem 0 0;
+    margin: 0;
   }
 
   header .wrapper {
@@ -69,12 +63,8 @@ nav a:first-of-type {
   }
 
   nav {
-    text-align: left;
-    margin-left: -1rem;
-    font-size: 1rem;
-
-    padding: 1rem 0;
-    margin-top: 1rem;
+    margin: 0;
+    padding: 0;
   }
 }
 </style>
