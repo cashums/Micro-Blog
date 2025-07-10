@@ -5,13 +5,85 @@ import NavigationBar from './components/NavigationBar.vue'
 
 <template>
   <header>
-    <img alt="CapsLock logo" class="logo" src="@/assets/logo.png" width="190" height="125" />
-
-    <NavigationBar/>
+    <div id="app">
+      <img alt="CapsLock logo" class="logo" src="@/assets/logo.png" width="190" height="125" />
+      <NavigationBar/>
+      <RouterView/>
+    </div>
   </header>
-
-  <RouterView/>
 </template>
+
+<style>
+body {
+  background-color: white;
+}
+
+* {
+  padding: 0;
+  margin: 0;
+  box-sizing: border-box;
+}
+
+.post-input {
+  position: fixed;
+  left: 40px;
+  top: 300px;
+}
+
+.page-layout {
+  display: flex;
+}
+
+.sidebar {
+  position: fixed;
+  left: 40px;
+  top: 150px;
+}
+
+.main-feed {
+  position: fixed;
+  left: 400px;
+  top: 150px;
+}
+
+.suggested-followers {
+  position: fixed;
+  right: 40px;
+  top: 150px;
+}
+
+/* .page-layout {
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+  align-items: flex-start;
+  gap: 2rem;
+  padding: 2rem 0;
+}
+
+.sidebar {
+  flex: 0 0 300px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.main-feed {
+  flex: 1 1 600px;
+  max-width: 700px;
+  min-width: 350px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.suggested-followers {
+  flex: 0 0 250px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+} */
+</style>
 
 <style scoped>
 header {
@@ -48,7 +120,7 @@ nav a:first-of-type {
 @media (min-width: 1024px) {
   header {
     display: flex;
-    place-items: center;
+    /* place-items: center; */
     padding-right: calc(var(--section-gap) / 2);
   }
 

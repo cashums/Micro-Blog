@@ -22,6 +22,6 @@ nav a {
   font-family: Helvetica, sans-serif;
   font-weight: bold;
   font-style: italic;
-  color: #d7c2a2;
+  color: black;
 }
 </style>
