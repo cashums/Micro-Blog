@@ -1,41 +1,102 @@
 <script setup>
-import { RouterLink, RouterView } from 'vue-router'
-import HelloWorld from './components/HelloWorld.vue'
+import { RouterView } from 'vue-router'
+import NavigationBar from './components/NavigationBar.vue'
 </script>
 
 <template>
   <header>
-    <img alt="Vue logo" class="logo" src="@/assets/logo.svg" width="125" height="125" />
-
-    <div class="wrapper">
-      <HelloWorld msg="You did it!" />
-
-      <nav>
-        <RouterLink to="/">Home</RouterLink>
-        <RouterLink to="/about">About</RouterLink>
-      </nav>
+    <div id="app">
+      <img alt="CapsLock logo" class="logo" src="@/assets/logo.png" width="190" height="125" />
+      <NavigationBar/>
+      <RouterView/>
     </div>
   </header>
-
-  <RouterView />
 </template>
+
+<style>
+body {
+  background-color: white;
+}
+
+* {
+  padding: 0;
+  margin: 0;
+  box-sizing: border-box;
+}
+
+.post-input {
+  position: fixed;
+  left: 40px;
+  top: 300px;
+}
+
+.page-layout {
+  display: flex;
+}
+
+.sidebar {
+  position: fixed;
+  left: 40px;
+  top: 150px;
+}
+
+.main-feed {
+  position: fixed;
+  left: 400px;
+  top: 150px;
+}
+
+.suggested-followers {
+  position: fixed;
+  right: 40px;
+  top: 150px;
+}
+
+/* .page-layout {
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+  align-items: flex-start;
+  gap: 2rem;
+  padding: 2rem 0;
+}
+
+.sidebar {
+  flex: 0 0 300px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.main-feed {
+  flex: 1 1 600px;
+  max-width: 700px;
+  min-width: 350px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.suggested-followers {
+  flex: 0 0 250px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+} */
+</style>
 
 <style scoped>
 header {
-  line-height: 1.5;
-  max-height: 100vh;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem;
 }
 
 .logo {
-  display: block;
-  margin: 0 auto 2rem;
-}
-
-nav {
-  width: 100%;
-  font-size: 12px;
-  text-align: center;
-  margin-top: 2rem;
+  position: fixed;
+  left: 0;
+  top: 0;
 }
 
 nav a.router-link-exact-active {
@@ -59,12 +120,12 @@ nav a:first-of-type {
 @media (min-width: 1024px) {
   header {
     display: flex;
-    place-items: center;
+    /* place-items: center; */
     padding-right: calc(var(--section-gap) / 2);
   }
 
   .logo {
-    margin: 0 2rem 0 0;
+    margin: 0;
   }
 
   header .wrapper {
@@ -74,12 +135,8 @@ nav a:first-of-type {
   }
 
   nav {
-    text-align: left;
-    margin-left: -1rem;
-    font-size: 1rem;
-
-    padding: 1rem 0;
-    margin-top: 1rem;
+    margin: 0;
+    padding: 0;
   }
 }
 </style>
