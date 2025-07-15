@@ -1,71 +1,8 @@
-<script setup>
-import { ref } from 'vue'
-import { posts } from '../stores/posts'
-
-const store = posts()
-const mode = ref('login')
-const email = ref('')
-const password = ref('')
-
-const MOCK_EMAIL = 'test@example.com'
-const MOCK_PASSWORD = 'password123'
-
-// Handle login
-function handleLogin() {
-  if (email.value.trim() === '' || password.value.trim() === '') {
-    alert('Please enter email and password')
-    return
-  }
-  // Mock login: only allow test@example.com / password123
-  if (email.value === MOCK_EMAIL && password.value === MOCK_PASSWORD) {
-    store.login(email.value)
-    email.value = ''
-    password.value = ''
-  }
-  else {
-    alert('Invalid credentials (try test@example.com / password123)')
-  }
-}
-
-// Handle account creation (mock)
-function handleSignup() {
-  if (!email.value.includes('@') || !email.value.includes('.com')) {
-    alert('Email must contain @ and .com')
-    return
-  }
-  if (password.value.length < 6) {
-    alert('Password must be at least 6 characters long')
-    return
-  }
-  // Mock signup: only allow test@example.com
-  if (email.value === MOCK_EMAIL) {
-    alert('Account created! You can now log in.')
-    mode.value = 'login'
-    email.value = ''
-    password.value = ''
-  }
-  else {
-    alert('For this mock, only test@example.com is allowed.')
-  }
-}
-
-// Handle logout
-function handleLogout() {
-  store.logout()
-  mode.value = 'login'
-}
-
-// function resetFields() {
-//   email.value = ''
-//   password.value = ''
-// }
-</script>
-
 <template>
   <div class="form-container">
-    <form v-if="!store.isLoggedIn" @submit.prevent>
+    <form v-if="!currentUser" @submit.prevent>
       <div class="option">
-        <a :class="{ active: mode === 'login' }" @click.prevent="mode = 'login'">Log In Test</a>
+        <a :class="{ active: mode === 'login' }" @click.prevent="mode = 'login'">Log In</a>
         <a :class="{ active: mode === 'signup' }" @click.prevent="mode = 'signup'">Create Account</a>
       </div>
 
@@ -83,11 +20,103 @@ function handleLogout() {
     </form>
 
     <div class="logout-box" v-else>
-      <p>Welcome, {{ store.currentUser }}!</p>
+      <p>Welcome, {{ currentUser?.email }}!</p>
       <button @click="handleLogout">Log Out</button>
     </div>
   </div>
 </template>
+
+<script setup>
+import { ref, onMounted } from 'vue'
+import { auth } from '@/firebaseResources.js'
+import { createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged } from 'firebase/auth'
+import { useRouter } from 'vue-router'
+
+const router = useRouter()
+const mode = ref('login')
+const email = ref('')
+const password = ref('')
+const currentUser = ref(null)
+
+onMounted(() => {
+  onAuthStateChanged(auth, (user) => {
+    currentUser.value = user
+    if (user) {
+      console.log('User is signed in:', user.email)
+    }
+    else {
+      console.log('User is signed out')
+    }
+  })
+})
+
+function handleLogin() {
+  if (email.value.trim() === '' || password.value.trim() === '') {
+    alert('Please enter email and password.')
+    return
+  }
+
+  signInWithEmailAndPassword(auth, email.value, password.value)
+    .then(() => {
+      console.log('Successfully logged in!')
+      email.value = ''
+      password.value = ''
+      router.push('/')
+    })
+    .catch((error) => {
+      console.log(error.code)
+      alert(error.message)
+    })
+}
+
+function handleSignup() {
+  // https://www.youtube.com/watch?v=G8BRVETdLVY - How to Validate a Password Using JavaScript (Simple)
+  if (password.value.length > 16) {
+    password.value = "";
+    return alert("Password must be 16 characters or less.");
+  }
+  if (password.value.length < 8) {
+    password.value = "";
+    return alert("Password must be 8 characters or longer.");
+  }
+  if (!/[a-z]/.test(password.value) && !/[A-Z]]/.test(password.value)) {
+    password.value = "";
+    return alert("Password must contain at least one letter.");
+  }
+  if (!/[0-9]/.test(password.value)) {
+    password.value = "";
+    return alert("Password must contain at least one number.");
+  }
+  if (!/[^a-zA-Z0-9]/.test(password.value)) {
+    password.value = "";
+    return alert("Password must contain at least one special non-alphanumeric character.");
+  }
+
+  createUserWithEmailAndPassword(auth, email.value, password.value)
+    .then(() => {
+      console.log('Successfully registered!')
+      email.value = ''
+      password.value = ''
+      mode.value = 'login'
+      router.push('/')
+    })
+    .catch((error) => {
+      console.log(error.code)
+      alert(error.message)
+    })
+}
+
+function handleLogout() {
+  signOut(auth)
+    .then(() => {
+      router.push('/login')
+    })
+    .catch((error) => {
+      console.log(error.code)
+      alert(error.message)
+    })
+}
+</script>
 
 <style scoped>
 .form-container {
