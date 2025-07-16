@@ -14,7 +14,9 @@
 <script>
 import { auth, firestore } from '@/firebaseResources.js'
 import { onAuthStateChanged } from 'firebase/auth'
-import { doc, getDoc, getDocs, collection, query, updateDoc, arrayUnion, getCountFromServer } from 'firebase/firestore'
+import { doc, getDoc, getDocs, collection, query, getCountFromServer } from 'firebase/firestore'
+import { followUser } from '@/utils/userActions.js'
+
 
 export default {
   name: "SuggestedFollowers",
@@ -44,30 +46,15 @@ export default {
 
   methods: {
     async follow(targetUser) {
-      if (!this.currentUser) return
-
       try {
-        const currentUserId = this.currentUser.uid
-        const targetUserId = targetUser.id
-
-        const targetUserDoc = await getDoc(doc(firestore, "users", targetUserId))
-        const targetUserPosts = targetUserDoc.data().posts || []
-
-        await updateDoc(doc(firestore, "users", currentUserId), {
-          following: arrayUnion(targetUserId),
-          feed: arrayUnion(...targetUserPosts)
-        })
-
-        await updateDoc(doc(firestore, "users", targetUserId), {
-          followers: arrayUnion(currentUserId)
-        })
-
+        await followUser(targetUser.id)
         console.log(`Successfully followed ${targetUser.email}`)
-        this.loadUsers() // Refresh the users list
+        this.loadUsers()
+        // optionally emit event to refresh other components
+        // this.$emit('user-followed', targetUser.id)
       }
       catch (error) {
-        console.error("Error following user:", error)
-        alert("Failed to follow user. Please try again.")
+        alert(`${error}: Failed to follow user. Please try again.`)
       }
     },
 
