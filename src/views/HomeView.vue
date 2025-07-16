@@ -1,20 +1,44 @@
-<script setup>
-import { computed } from 'vue'
+<script>
+import { auth, firestore } from '@/firebaseResources.js'
+import { onAuthStateChanged } from 'firebase/auth'
+import { doc, onSnapshot, collection, query, where, getDocs } from 'firebase/firestore'
 import { posts } from '../stores/posts'
 import UserStats from '../components/UserStats.vue'
 import PostFeed from '../components/PostFeed.vue'
 import SuggestedFollowers from '../components/SuggestedFollowers.vue'
 import NewPost from '../components/NewPost.vue'
 
-const store = posts()
+export default {
+  name: "HomeView",
 
-const allPosts = store.posts
-const currentUser = computed(() =>
-  store.users.find(user => user.username === store.currentUser)
-)
-// const suggestedUsers = computed(() =>
-//   store.users.filter(user => user.username !== store.currentUser)
-// )
+  components: {
+    UserStats,
+    PostFeed,
+    SuggestedFollowers,
+    NewPost
+  },
+
+  data() {
+    return {
+      currentUser: null,
+      userFeedPosts: [],
+      unsubscribe: null,
+      store: posts() // Keep the store for now
+    }
+  },
+
+  computed: {
+    allPosts() {
+      return this.store.posts
+    }
+  },
+
+  mounted() {
+    onAuthStateChanged(auth, (user) => {
+      this.currentUser = user
+    })
+  }
+}
 </script>
 
 <template>
@@ -24,7 +48,7 @@ const currentUser = computed(() =>
     </div>
 
     <div class="main-feed">
-      <NewPost v-if="store.isLoggedIn" />
+      <NewPost v-if="currentUser" />
       <PostFeed :posts="allPosts" />
     </div>
 
