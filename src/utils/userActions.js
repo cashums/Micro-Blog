@@ -24,6 +24,7 @@ export async function followUser(targetUserId) {
       followers: arrayUnion(currentUserId),
     })
 
+    console.log(`Successfully followed user ${targetUserId}`)
     return { success: true }
   }
   catch (error) {

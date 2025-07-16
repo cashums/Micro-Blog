@@ -47,7 +47,7 @@ export default {
       try {
         const postData = {
           timestamp: new Date(),
-          author: this.currentUser.uid,
+          author: this.currentUser.email,
           content: this.content
         }
 

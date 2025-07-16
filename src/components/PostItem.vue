@@ -1,29 +1,28 @@
 <template>
   <div class="post-item">
-    <div class="post-details">@{{ username }} on {{ date }} at {{ time }}</div>
-    <p>{{ content }}</p>
+    <div class="post-details">@{{ post.author }} on {{ formatDate(post.timestamp) }} at {{ formatTime(post.timestamp) }}</div>
+    <p>{{ post.content }}</p>
   </div>
 </template>
 
 <script>
 export default {
   name: 'PostItem',
+
   props: {
-    username: {
-      type: String,
+    post: {
+      type: Object,
       required: true
+    }
+  },
+
+  methods: {
+    formatDate(timestamp) {
+      return timestamp.toDate().toLocaleDateString()
     },
-    date: {
-      type: String,
-      required: true
-    },
-    time: {
-      type: String,
-      required: true
-    },
-    content: {
-      type: String,
-      required: true
+
+    formatTime(timestamp) {
+      return timestamp.toDate().toLocaleTimeString()
     }
   }
 }
