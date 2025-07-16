@@ -70,7 +70,7 @@ export default {
         }
 
         else if (this.currentUser) {
-          // Home page and logged in - show user's feed
+          // home page AND logged in - show user's feed
           const userDoc = await getDoc(doc(firestore, "users", this.currentUser.uid))
           const feedPostIds = userDoc.data()?.feed || []
 
@@ -80,12 +80,14 @@ export default {
               where("__name__", "in", feedPostIds.slice(0, 10))
             )
             const querySnapshot = await getDocs(postsQuery)
-            posts = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }))
+            const allFeedPosts = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }))
+
+            posts = allFeedPosts.filter(post => post.author !== this.currentUser.email)
           }
         }
 
         else {
-          // Home page and not logged in - show recent posts
+          // home page and NOT logged in - show recent posts
           const postsQuery = query(
             collection(firestore, "posts"),
             orderBy("timestamp", "desc"),
@@ -95,7 +97,6 @@ export default {
           posts = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }))
         }
 
-        // Sort by newest first (except for recent posts which are already sorted)
         if (this.userId || this.currentUser) {
           posts.sort((a, b) => b.timestamp.toDate() - a.timestamp.toDate())
         }

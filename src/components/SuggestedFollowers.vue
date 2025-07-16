@@ -53,8 +53,6 @@ export default {
         console.log(`Successfully followed ${targetUser.email}`)
         await this.loadCurrentUserData()
         this.loadUsers()
-        // optionally emit event to refresh other components
-        // this.$emit('user-followed', targetUser.id)
       }
       catch (error) {
         alert(`${error}: Failed to follow user. Please try again.`)
@@ -86,12 +84,21 @@ export default {
           // Load all users except current user
           const usersRef = collection(firestore, "users")
           const querySnapshot = await getDocs(query(usersRef))
-          this.users = querySnapshot.docs
+          let allUsers = querySnapshot.docs
             .map(doc => ({
               id: doc.id,
               ...doc.data()
             }))
-            .filter(user => user.id !== this.currentUser?.uid)
+
+          if (this.currentUser) {
+            const followingIds = this.currentUserData?.following || []
+            allUsers = allUsers.filter(user => user.id !== this.currentUser.uid && !followingIds.includes(user.id)
+            )
+          }
+
+          // randomly select 5 users
+          const shuffled = [...allUsers].sort(() => 0.5 - Math.random())
+          this.users = shuffled.slice(0, 5)
         }
       }
       catch (error) {
@@ -130,34 +137,6 @@ export default {
     }
   }
 }
-
-// const store = posts()
-
-// const props = defineProps({
-//   userId: Number
-// })
-
-// const users = computed(() => {
-//   if (props.userId) {
-//     const viewedUser = typeof store.getUserById === 'function'
-//       ? store.getUserById(props.userId) : null
-//     if (!viewedUser || viewedUser.username === store.currentUser) return []
-//     return [viewedUser]
-//   }
-
-//   return store.users.filter(u => u.id !== store.currentUser?.id)
-// })
-
-// const isLoggedIn = computed(() => store.isLoggedIn)
-
-// function follow(user) {
-//   alert(`Followed ${user.username}`)
-//   user.incrementFollowersCount()
-// }
-
-// console.log('props.userId:', props.userId)
-// console.log('viewedUser:', store.getUserById(props.userId))
-// console.log('currentUser:', store.currentUser)
 </script>
 
 
