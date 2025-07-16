@@ -1,42 +1,54 @@
-<script setup>
-import { ref, onMounted } from 'vue'
-import { useRoute } from 'vue-router'
+<script>
 import { firestore } from '@/firebaseResources.js'
 import { doc, getDoc } from 'firebase/firestore'
 import UserStats from '../components/UserStats.vue'
 import SuggestedFollowers from '../components/SuggestedFollowers.vue'
 import PostFeed from '../components/PostFeed.vue'
 
-const route = useRoute()
-const userId = String(route.params.id)
+export default {
+  name: "UserProfileView",
 
-const viewedUser = ref(null)
-const loading = ref(true)
+  components: {
+    UserStats,
+    SuggestedFollowers,
+    PostFeed
+  },
 
-onMounted(async () => {
-  await loadUser()
-})
+  data() {
+    return {
+      viewedUser: null,
+      loading: true,
+      userId: String(this.$route.params.id)
+    }
+  },
 
-async function loadUser() {
-  try {
-    const userDoc = await getDoc(doc(firestore, "users", userId))
-    if (userDoc.exists()) {
-      viewedUser.value = {
-        id: userDoc.id,
-        ...userDoc.data()
+  async mounted() {
+    await this.loadUser()
+  },
+
+  methods: {
+    async loadUser() {
+      try {
+        const userDoc = await getDoc(doc(firestore, "users", this.userId))
+        if (userDoc.exists()) {
+          this.viewedUser = {
+            id: userDoc.id,
+            ...userDoc.data()
+          }
+        }
+        else {
+          console.error("User not found")
+          this.viewedUser = null
+        }
+      }
+      catch (error) {
+        console.error("Error loading user:", error)
+        this.viewedUser = null
+      }
+      finally {
+        this.loading = false
       }
     }
-    else {
-      console.error("User not found")
-      viewedUser.value = null
-    }
-  }
-  catch (error) {
-    console.error("Error loading user:", error)
-    viewedUser.value = null
-  }
-  finally {
-    loading.value = false
   }
 }
 </script>
