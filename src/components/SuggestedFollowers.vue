@@ -5,7 +5,7 @@
     <ul v-else>
       <li v-for="user in users" :key="user.id" class="user-entry">
         <RouterLink :to="`/users/${user.id}`">{{ user.email }}</RouterLink>
-        <button v-if="currentUser" @click="follow(user)">Follow</button>
+        <button v-if="currentUser && !isAlreadyFollowing(user.id)" @click="follow(user)">Follow</button>
       </li>
     </ul>
   </div>
@@ -31,14 +31,16 @@ export default {
   data() {
     return {
       currentUser: null,
+      currentUserData: null,
       users: [],
       userCount: 0
     }
   },
 
   async mounted() {
-    onAuthStateChanged(auth, (user) => {
+    onAuthStateChanged(auth, async (user) => {
       this.currentUser = user
+      await this.loadCurrentUserData()
       this.loadUsers()
       this.getUserCount()
     })
@@ -49,6 +51,7 @@ export default {
       try {
         await followUser(targetUser.id)
         console.log(`Successfully followed ${targetUser.email}`)
+        await this.loadCurrentUserData()
         this.loadUsers()
         // optionally emit event to refresh other components
         // this.$emit('user-followed', targetUser.id)
@@ -56,6 +59,13 @@ export default {
       catch (error) {
         alert(`${error}: Failed to follow user. Please try again.`)
       }
+    },
+
+    isAlreadyFollowing(userId) {
+      if (!this.currentUserData || !this.currentUserData.following) {
+        return false
+      }
+      return this.currentUserData.following.includes(userId)
     },
 
     async loadUsers() {
@@ -67,7 +77,8 @@ export default {
               id: userDoc.id,
               ...userDoc.data()
             }]
-          } else {
+          }
+          else {
             this.users = []
           }
         }
@@ -82,7 +93,8 @@ export default {
             }))
             .filter(user => user.id !== this.currentUser?.uid)
         }
-      } catch (error) {
+      }
+      catch (error) {
         console.error("Error loading users:", error)
         this.users = []
       }
@@ -96,6 +108,24 @@ export default {
       catch (error) {
         alert("Error getting user count:", error)
         this.userCount = 0
+      }
+    },
+
+    async loadCurrentUserData() {
+      if (!this.currentUser) {
+        this.currentUserData = null
+        return
+      }
+
+      try {
+        const userDoc = await getDoc(doc(firestore, "users", this.currentUser.uid))
+        if (userDoc.exists()) {
+          this.currentUserData = userDoc.data()
+        }
+      }
+      catch (error) {
+        console.error("Error loading current user data:", error)
+        this.currentUserData = null
       }
     }
   }
