@@ -1,62 +1,116 @@
 <template>
   <div class="suggested-followers">
     <p class="title">Users to Follow</p>
-    <div v-if="users.length === 0">No one to follow right now.</div>
+    <div v-if="userCount < 1">No one to follow right now.</div>
     <ul v-else>
       <li v-for="user in users" :key="user.id" class="user-entry">
-        <RouterLink :to="`/users/${user.id}`">{{ user.username }}</RouterLink>
-        <button v-if="isLoggedIn" @click="follow(user)">Follow</button>
+        <RouterLink :to="`/users/${user.id}`">{{ user.email }}</RouterLink>
+        <button v-if="currentUser" @click="follow(user)">Follow</button>
       </li>
     </ul>
   </div>
 </template>
 
 <script>
-import { posts } from '../stores/posts'
+import { auth, firestore } from '@/firebaseResources.js'
+import { onAuthStateChanged } from 'firebase/auth'
+import { doc, getDoc, getDocs, collection, query, updateDoc, arrayUnion, getCountFromServer } from 'firebase/firestore'
 
 export default {
   name: "SuggestedFollowers",
 
   props: {
     userId: {
-      type: Number,
+      type: String,
       required: false
     }
   },
 
   data() {
     return {
-      store: posts()
+      currentUser: null,
+      users: [],
+      userCount: 0
     }
   },
 
-  computed: {
-    users() {
-      if (this.userId) {
-        const viewedUser = typeof this.store.getUserById === "function"
-          ? this.store.getUserById(this.userId) : null
-        if (!viewedUser || viewedUser.username === this.store.currentUser) return []
-        return [viewedUser]
-      }
-      return this.store.users.filter(u => u.id !== this.store.currentUser?.id)
-    },
-
-    isLoggedIn() {
-      return this.store.isLoggedIn
-    }
+  async mounted() {
+    onAuthStateChanged(auth, (user) => {
+      this.currentUser = user
+      this.loadUsers()
+      this.getUserCount()
+    })
   },
 
   methods: {
-    follow(user) {
-      alert(`Followed ${user.username}`)
-      user.incrementFollowersCount()
-    }
-  },
+    async follow(targetUser) {
+      if (!this.currentUser) return
 
-  mounted() {
-    console.log('props.userId:', this.userId)
-    console.log('viewedUser:', this.store.getUserById(this.userId))
-    console.log('currentUser:', this.store.currentUser)
+      try {
+        const currentUserId = this.currentUser.uid
+        const targetUserId = targetUser.id
+
+        const targetUserDoc = await getDoc(doc(firestore, "users", targetUserId))
+        const targetUserPosts = targetUserDoc.data().posts || []
+
+        await updateDoc(doc(firestore, "users", currentUserId), {
+          following: arrayUnion(targetUserId),
+          feed: arrayUnion(...targetUserPosts)
+        })
+
+        await updateDoc(doc(firestore, "users", targetUserId), {
+          followers: arrayUnion(currentUserId)
+        })
+
+        console.log(`Successfully followed ${targetUser.email}`)
+        this.loadUsers() // Refresh the users list
+      }
+      catch (error) {
+        console.error("Error following user:", error)
+        alert("Failed to follow user. Please try again.")
+      }
+    },
+
+    async loadUsers() {
+      try {
+        if (this.userId) {
+          const userDoc = await getDoc(doc(firestore, "users", this.userId))
+          if (userDoc.exists() && userDoc.id !== this.currentUser?.uid) {
+            this.users = [{
+              id: userDoc.id,
+              ...userDoc.data()
+            }]
+          } else {
+            this.users = []
+          }
+        }
+        else {
+          // Load all users except current user
+          const usersRef = collection(firestore, "users")
+          const querySnapshot = await getDocs(query(usersRef))
+          this.users = querySnapshot.docs
+            .map(doc => ({
+              id: doc.id,
+              ...doc.data()
+            }))
+            .filter(user => user.id !== this.currentUser?.uid)
+        }
+      } catch (error) {
+        console.error("Error loading users:", error)
+        this.users = []
+      }
+    },
+
+    async getUserCount() {
+      try {
+        const snapshot = await getCountFromServer(collection(firestore, "users"))
+        this.userCount = snapshot.data().count
+      }
+      catch (error) {
+        alert("Error getting user count:", error)
+        this.userCount = 0
+      }
+    }
   }
 }
 
