@@ -26,95 +26,121 @@
   </div>
 </template>
 
-<script setup>
-import { ref, onMounted } from 'vue'
-import { auth } from '@/firebaseResources.js'
+<script>
+import { auth, firestore } from '@/firebaseResources.js'
 import { createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged } from 'firebase/auth'
+import { doc, setDoc } from 'firebase/firestore'
 import { useRouter } from 'vue-router'
 
-const router = useRouter()
-const mode = ref('login')
-const email = ref('')
-const password = ref('')
-const currentUser = ref(null)
+export default {
+  name: "LoginBox",
 
-onMounted(() => {
-  onAuthStateChanged(auth, (user) => {
-    currentUser.value = user
-    if (user) {
-      console.log('User is signed in:', user.email)
+  data() {
+    return {
+      mode: "login",
+      email: "",
+      password: "",
+      currentUser: null
     }
-    else {
-      console.log('User is signed out')
+  },
+
+  mounted() {
+    onAuthStateChanged(auth, (user) => {
+      this.currentUser = user
+      if (user) {
+        console.log('User is signed in:', user.email)
+      }
+      else {
+        console.log('User is signed out')
+      }
+    })
+  },
+
+  methods: {
+    async handleLogin() {
+      if (this.email.trim() === '' || this.password.trim() === '') {
+        alert('Please enter email and password.')
+        return
+      }
+
+      try {
+        await signInWithEmailAndPassword(auth, this.email, this.password)
+        console.log('Successfully logged in!')
+        this.email = ''
+        this.password = ''
+        this.$router.push('/')
+      }
+      catch (error) {
+        console.log(error.code)
+        alert(error.message)
+      }
+    },
+
+    async handleSignup() {
+      // Password validation
+      if (this.password.length > 16) {
+        this.password = ""
+        return alert("Password must be 16 characters or less.")
+      }
+      if (this.password.length < 8) {
+        this.password = ""
+        return alert("Password must be 8 characters or longer.")
+      }
+      if (!/[a-z]/.test(this.password) && !/[A-Z]/.test(this.password)) {
+        this.password = ""
+        return alert("Password must contain at least one letter.")
+      }
+      if (!/[0-9]/.test(this.password)) {
+        this.password = ""
+        return alert("Password must contain at least one number.")
+      }
+      if (!/[^a-zA-Z0-9]/.test(this.password)) {
+        this.password = ""
+        return alert("Password must contain at least one special character.")
+      }
+
+      try {
+        // Create auth user
+        const userCredential = await createUserWithEmailAndPassword(auth, this.email, this.password)
+        const user = userCredential.user
+
+        // Create Firestore user document
+        await setDoc(doc(firestore, "users", user.uid), {
+          id: user.uid,
+          email: user.email,
+          username: this.email, // Using email as username initially
+          posts: [],
+          following: [],
+          followers: [],
+          postsCount: 0,
+          followingCount: 0,
+          followersCount: 0,
+          createdAt: new Date().toISOString()
+        })
+
+        console.log('Successfully registered and created user document!')
+        this.email = ''
+        this.password = ''
+        this.mode = 'login'
+        this.$router.push('/')
+      }
+      catch (error) {
+        console.log(error.code)
+        alert(error.message)
+      }
+    },
+
+    async handleLogout() {
+      try {
+        await signOut(auth)
+        this.$router.push('/login')
+      }
+      catch (error) {
+        console.log(error.code)
+        alert(error.message)
+      }
     }
-  })
-})
-
-function handleLogin() {
-  if (email.value.trim() === '' || password.value.trim() === '') {
-    alert('Please enter email and password.')
-    return
   }
-
-  signInWithEmailAndPassword(auth, email.value, password.value)
-    .then(() => {
-      console.log('Successfully logged in!')
-      email.value = ''
-      password.value = ''
-      router.push('/')
-    })
-    .catch((error) => {
-      console.log(error.code)
-      alert(error.message)
-    })
-}
-
-function handleSignup() {
-  // https://www.youtube.com/watch?v=G8BRVETdLVY - How to Validate a Password Using JavaScript (Simple)
-  if (password.value.length > 16) {
-    password.value = "";
-    return alert("Password must be 16 characters or less.");
-  }
-  if (password.value.length < 8) {
-    password.value = "";
-    return alert("Password must be 8 characters or longer.");
-  }
-  if (!/[a-z]/.test(password.value) && !/[A-Z]]/.test(password.value)) {
-    password.value = "";
-    return alert("Password must contain at least one letter.");
-  }
-  if (!/[0-9]/.test(password.value)) {
-    password.value = "";
-    return alert("Password must contain at least one number.");
-  }
-  if (!/[^a-zA-Z0-9]/.test(password.value)) {
-    password.value = "";
-    return alert("Password must contain at least one special non-alphanumeric character.");
-  }
-
-  createUserWithEmailAndPassword(auth, email.value, password.value)
-    .then(() => {
-      console.log('Successfully registered!')
-      email.value = ''
-      password.value = ''
-      mode.value = 'login'
-      router.push('/')
-    })
-    .catch((error) => {
-      console.log(error.code)
-      alert(error.message)
-    })
-}
-
-function handleLogout() {
-  signOut(auth)
-    .then(() => {
-      router.push('/login')
-    })
-    .catch((error) => {
-      console.log(error.code)
-      alert(error.message)
-    })
 }
 </script>
 
