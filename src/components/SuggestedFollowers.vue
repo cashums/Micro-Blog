@@ -11,38 +11,82 @@
   </div>
 </template>
 
-<script setup>
-import { computed } from 'vue'
-import { RouterLink } from 'vue-router'
+<script>
 import { posts } from '../stores/posts'
 
-const store = posts()
+export default {
+  name: "SuggestedFollowers",
 
-const props = defineProps({
-  userId: Number
-})
+  props: {
+    userId: {
+      type: Number,
+      required: false
+    }
+  },
 
-const users = computed(() => {
-  if (props.userId) {
-    const viewedUser = typeof store.getUserById === 'function'
-      ? store.getUserById(props.userId) : null
-    if (!viewedUser || viewedUser.username === store.currentUser) return []
-    return [viewedUser]
+  data() {
+    return {
+      store: posts()
+    }
+  },
+
+  computed: {
+    users() {
+      if (this.userId) {
+        const viewedUser = typeof this.store.getUserById === "function"
+          ? this.store.getUserById(this.userId) : null
+        if (!viewedUser || viewedUser.username === this.store.currentUser) return []
+        return [viewedUser]
+      }
+      return this.store.users.filter(u => u.id !== this.store.currentUser?.id)
+    },
+
+    isLoggedIn() {
+      return this.store.isLoggedIn
+    }
+  },
+
+  methods: {
+    follow(user) {
+      alert(`Followed ${user.username}`)
+      user.incrementFollowersCount()
+    }
+  },
+
+  mounted() {
+    console.log('props.userId:', this.userId)
+    console.log('viewedUser:', this.store.getUserById(this.userId))
+    console.log('currentUser:', this.store.currentUser)
   }
-
-  return store.users.filter(u => u.id !== store.currentUser?.id)
-})
-
-const isLoggedIn = computed(() => store.isLoggedIn)
-
-function follow(user) {
-  alert(`Followed ${user.username}`)
-  user.incrementFollowersCount()
 }
 
-console.log('props.userId:', props.userId)
-console.log('viewedUser:', store.getUserById(props.userId))
-console.log('currentUser:', store.currentUser)
+// const store = posts()
+
+// const props = defineProps({
+//   userId: Number
+// })
+
+// const users = computed(() => {
+//   if (props.userId) {
+//     const viewedUser = typeof store.getUserById === 'function'
+//       ? store.getUserById(props.userId) : null
+//     if (!viewedUser || viewedUser.username === store.currentUser) return []
+//     return [viewedUser]
+//   }
+
+//   return store.users.filter(u => u.id !== store.currentUser?.id)
+// })
+
+// const isLoggedIn = computed(() => store.isLoggedIn)
+
+// function follow(user) {
+//   alert(`Followed ${user.username}`)
+//   user.incrementFollowersCount()
+// }
+
+// console.log('props.userId:', props.userId)
+// console.log('viewedUser:', store.getUserById(props.userId))
+// console.log('currentUser:', store.currentUser)
 </script>
 
 
