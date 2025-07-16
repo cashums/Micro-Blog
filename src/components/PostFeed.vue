@@ -25,6 +25,13 @@ export default {
     PostItem
   },
 
+  props: {
+    userId: {
+      type: String,
+      required: false
+    }
+  },
+
   data() {
     return {
       currentUser: null,
@@ -45,12 +52,55 @@ export default {
       this.loading = true
 
       try {
-        if (this.currentUser) {
-          await this.loadUserFeedPosts()
+        let posts = []
+
+        if (this.userId) {
+          // Viewing specific user's profile - show their posts
+          const userDoc = await getDoc(doc(firestore, "users", this.userId))
+          const userPostIds = userDoc.data()?.posts || []
+
+          if (userPostIds.length > 0) {
+            const postsQuery = query(
+              collection(firestore, "posts"),
+              where("__name__", "in", userPostIds.slice(0, 10))
+            )
+            const querySnapshot = await getDocs(postsQuery)
+            posts = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }))
+          }
         }
+
+        else if (this.currentUser) {
+          // Home page and logged in - show user's feed
+          const userDoc = await getDoc(doc(firestore, "users", this.currentUser.uid))
+          const feedPostIds = userDoc.data()?.feed || []
+
+          if (feedPostIds.length > 0) {
+            const postsQuery = query(
+              collection(firestore, "posts"),
+              where("__name__", "in", feedPostIds.slice(0, 10))
+            )
+            const querySnapshot = await getDocs(postsQuery)
+            posts = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }))
+          }
+        }
+
         else {
-          await this.loadRecentPosts()
+          // Home page and not logged in - show recent posts
+          const postsQuery = query(
+            collection(firestore, "posts"),
+            orderBy("timestamp", "desc"),
+            limit(10)
+          )
+          const querySnapshot = await getDocs(postsQuery)
+          posts = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }))
         }
+
+        // Sort by newest first (except for recent posts which are already sorted)
+        if (this.userId || this.currentUser) {
+          posts.sort((a, b) => b.timestamp.toDate() - a.timestamp.toDate())
+        }
+
+        this.posts = posts.slice(0, 10)
       }
       catch (error) {
         console.error('Error loading posts:', error)
@@ -59,65 +109,16 @@ export default {
       finally {
         this.loading = false
       }
-    },
-
-    async loadRecentPosts() {
-      try {
-        // Get 10 most recent posts from all posts
-        const postsQuery = query(
-          collection(firestore, "posts"),
-          orderBy("timestamp", "desc"),
-          limit(10)
-        )
-
-        const querySnapshot = await getDocs(postsQuery)
-        this.posts = querySnapshot.docs.map(doc => ({
-          id: doc.id,
-          ...doc.data()
-        }))
-      }
-      catch (error) {
-        console.error('Error loading recent posts:', error)
-        this.posts = []
-      }
-    },
-
-    async loadUserFeedPosts() {
-      try {
-        // get current user's feed array
-        const userDoc = await getDoc(doc(firestore, "users", this.currentUser.uid))
-        const userData = userDoc.data()
-        const feedPostIds = userData?.feed || []
-
-        if (feedPostIds.length === 0) {
-          this.posts = []
-          return
-        }
-
-        // get the actual post documents
-        const postsQuery = query(
-          collection(firestore, "posts"),
-          where("__name__", "in", feedPostIds.slice(0, 10))
-        )
-
-        const querySnapshot = await getDocs(postsQuery)
-        this.posts = querySnapshot.docs
-          .map(doc => ({
-            id: doc.id,
-            ...doc.data()
-          }))
-          .sort((a, b) => b.timestamp.toDate() - a.timestamp.toDate()) // sort by newest first
-          .slice(0, 10)
-      }
-      catch (error) {
-          console.error('Error loading user feed posts:', error)
-          this.posts = []
-      }
     }
   },
 
   watch: {
     currentUser: {
+      handler() {
+        this.loadPosts()
+      }
+    },
+    userId: {
       handler() {
         this.loadPosts()
       }

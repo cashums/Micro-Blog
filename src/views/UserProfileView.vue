@@ -62,7 +62,7 @@ export default {
       <UserStats :userId="viewedUser.id" />
     </div>
     <div class="main-feed">
-      <PostFeed :posts="[]" />
+      <PostFeed :userId="viewedUser.id" />
     </div>
     <div class="suggested-followers">
       <SuggestedFollowers :userId="viewedUser.id" />
