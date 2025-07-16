@@ -30,7 +30,6 @@
 import { auth, firestore } from '@/firebaseResources.js'
 import { createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged } from 'firebase/auth'
 import { doc, setDoc } from 'firebase/firestore'
-import { useRouter } from 'vue-router'
 
 export default {
   name: "LoginBox",
@@ -77,7 +76,7 @@ export default {
     },
 
     async handleSignup() {
-      // Password validation
+      // https://www.youtube.com/watch?v=G8BRVETdLVY - How to Validate a Password Using JavaScript (Simple)
       if (this.password.length > 16) {
         this.password = ""
         return alert("Password must be 16 characters or less.")
@@ -100,22 +99,15 @@ export default {
       }
 
       try {
-        // Create auth user
         const userCredential = await createUserWithEmailAndPassword(auth, this.email, this.password)
         const user = userCredential.user
 
-        // Create Firestore user document
         await setDoc(doc(firestore, "users", user.uid), {
-          id: user.uid,
           email: user.email,
-          username: this.email, // Using email as username initially
-          posts: [],
-          following: [],
+          feed: [],
           followers: [],
-          postsCount: 0,
-          followingCount: 0,
-          followersCount: 0,
-          createdAt: new Date().toISOString()
+          following: [],
+          posts: []
         })
 
         console.log('Successfully registered and created user document!')
