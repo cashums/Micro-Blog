@@ -132,7 +132,7 @@ export default {
 .post-feed {
   background-color: #d7c2a2;
   padding: 1rem;
-  width: 750px;
+  width: 500px;
   text-align: center;
   border-radius: 12px;
 }

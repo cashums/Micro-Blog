@@ -1,11 +1,13 @@
 <template>
-  <header>
-    <div id="app">
+  <div id="app">
+    <header>
       <img alt="CapsLock logo" class="logo" src="@/assets/logo.png" width="190" height="125" />
       <NavigationBar/>
+    </header>
+    <main>
       <RouterView/>
-    </div>
-  </header>
+    </main>
+  </div>
 </template>
 
 <script>
@@ -40,9 +42,58 @@ body {
 }
 
 .page-layout {
-  display: flex;
+  display: grid;
+  margin-top: 150px;
+  grid-template-rows: 100px 100px 100px 100px 100px 100px 100px 100px 100px 100px;
+  grid-template-columns: 100px 100px 100px 100px 100px 100px 100px 100px 100px 100px;
+  gap: 0.5rem;
 }
 
+.post-input {
+  /* grid-area: sidebar-bottom;
+  display: flex;
+  flex-direction: column;
+  align-items: center; */
+
+  grid-row-start: 3;
+  /* grid-row-end: 2; */
+  grid-column-start: 1;
+  /* grid-column-end: 3; */
+}
+
+.post-input {
+  background-color: #d7c2a2;
+  padding: 1rem;
+  border-radius: 8px;
+  margin-bottom: 1rem;
+  width: 300px;
+  box-sizing: border-box;
+  grid-row-start: 3;
+  grid-column-start: 1;
+}
+
+.sidebar {
+  grid-row-start: 1;
+  /* grid-row-end: 2; */
+  grid-column-start: 1;
+  /* grid-column-end: 3; */
+}
+
+.main-feed {
+  grid-row-start: 1;
+  /* grid-row-end: 1; */
+  grid-column-start: 4;
+  /* grid-column-end: 5; */
+}
+
+.suggested-followers {
+  grid-row-start: 1;
+  /* grid-row-end: 1; */
+  grid-column-start: 9;
+  /* grid-column-end: 5; */
+}
+
+/*
 .sidebar {
   position: fixed;
   left: 40px;
@@ -59,7 +110,7 @@ body {
   position: fixed;
   right: 40px;
   top: 150px;
-}
+} */
 
 /* .page-layout {
   display: flex;
@@ -103,10 +154,17 @@ body {
 
 <style scoped>
 header {
-  display: flex;
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  /* display: flex; */
   justify-content: space-between;
   align-items: center;
-  padding: 1rem;
+  padding: 0.5rem;
+  /* background-color: white; */
+  z-index: 1000;
+  height: 150px;
 }
 
 .logo {
@@ -114,6 +172,7 @@ header {
   left: 0;
   top: 0;
 }
+
 
 nav a.router-link-exact-active {
   color: var(--color-text);
