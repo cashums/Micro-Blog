@@ -199,7 +199,7 @@ button:hover {
 .logout-box {
   background-color: #d7c2a2;
   padding: 1rem;
-  border-radius: 8px;
+  border-radius: 12px;
   width: 250px;
   text-align: center;
 }

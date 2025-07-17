@@ -32,7 +32,7 @@ export default {
 .post-item {
   background-color: #d7c2a2;
   padding: 1rem;
-  width: 450px;
+  width: 480px;
   text-align: left;
   border-radius: 12px;
 }

@@ -6,8 +6,11 @@
     </div>
 
     <div class="main-feed">
-      <NewPost v-if="currentUser" />
       <PostFeed />
+    </div>
+
+    <div class="post-input">
+      <NewPost v-if="currentUser" />
     </div>
 
     <div class="suggested-followers">

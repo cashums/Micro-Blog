@@ -99,6 +99,15 @@ h3 {
   margin-bottom: 0.5rem;
 }
 
+.post-input {
+  background-color: #d7c2a2;
+  padding: 1rem;
+  border-radius: 8px;
+  margin-bottom: 1rem;
+  width: 300px;
+  box-sizing: border-box;
+}
+
 .post-textarea {
   width: 100%;
   padding: 0.5rem;
