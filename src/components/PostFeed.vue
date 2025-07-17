@@ -1,7 +1,7 @@
 <template>
   <div class="post-feed">
-    <div v-if="loading">Loading posts...</div>
-    <div v-else-if="posts.length === 0">Nothing has been posted yet.</div>
+    <div class="placeholder-text" v-if="loading">Loading posts...</div>
+    <div class="placeholder-text" v-else-if="posts.length === 0">Nothing has been posted yet.</div>
     <div v-else>
       <PostItem
         v-for="post in posts"
@@ -55,7 +55,7 @@ export default {
         let posts = []
 
         if (this.userId) {
-          // Viewing specific user's profile - show their posts
+          // viewing specific user's profile - show their posts
           const userDoc = await getDoc(doc(firestore, "users", this.userId))
           const userPostIds = userDoc.data()?.posts || []
 

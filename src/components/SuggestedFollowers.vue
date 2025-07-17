@@ -1,7 +1,7 @@
 <template>
   <div class="suggested-followers">
     <p class="title">Users to Follow</p>
-    <div v-if="userCount < 1">No one to follow right now.</div>
+    <div class="placeholder-text" v-if="userCount < 1">No one to follow right now.</div>
     <ul v-else>
       <li v-for="user in users" :key="user.id" class="user-entry">
         <RouterLink :to="`/users/${user.id}`">{{ user.email }}</RouterLink>
@@ -81,7 +81,7 @@ export default {
           }
         }
         else {
-          // Load all users except current user
+          // load all users except current user
           const usersRef = collection(firestore, "users")
           const querySnapshot = await getDocs(query(usersRef))
           let allUsers = querySnapshot.docs
@@ -183,4 +183,5 @@ export default {
 .user-entry button:hover {
   background-color: #369e6f;
 }
+
 </style>

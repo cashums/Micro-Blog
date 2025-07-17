@@ -1,3 +1,23 @@
+<template>
+  <div class="placeholder-text" v-if="loading">
+    Loading user...
+  </div>
+  <main v-else-if="viewedUser" class="page-layout">
+    <div class="sidebar">
+      <UserStats :userId="viewedUser.id" />
+    </div>
+    <div class="main-feed">
+      <PostFeed :userId="viewedUser.id" />
+    </div>
+    <div class="suggested-followers">
+      <SuggestedFollowers :userId="viewedUser.id" />
+    </div>
+  </main>
+  <div v-else>
+    User not found
+  </div>
+</template>
+
 <script>
 import { firestore } from '@/firebaseResources.js'
 import { doc, getDoc } from 'firebase/firestore'
@@ -52,27 +72,3 @@ export default {
   }
 }
 </script>
-
-<template>
-  <div v-if="loading">
-    Loading user...
-  </div>
-  <main v-else-if="viewedUser" class="page-layout">
-    <div class="sidebar">
-      <UserStats :userId="viewedUser.id" />
-    </div>
-    <div class="main-feed">
-      <PostFeed :userId="viewedUser.id" />
-    </div>
-    <div class="suggested-followers">
-      <SuggestedFollowers :userId="viewedUser.id" />
-    </div>
-  </main>
-  <div v-else>
-    User not found
-  </div>
-</template>
-
-<!-- <style scoped>
-
-</style> -->

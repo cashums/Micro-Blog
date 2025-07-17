@@ -20,7 +20,8 @@
     </form>
 
     <div class="logout-box" v-else>
-      <p>Welcome, {{ currentUser?.email }}!</p>
+      <div class="placeholder-text">Welcome, {{ currentUser?.email }}!</div>
+      <br>
       <button @click="handleLogout">Log Out</button>
     </div>
   </div>
@@ -143,7 +144,6 @@ export default {
   align-items: center;
   min-height: 200px;
   background-color: #d7c2a2;
-
 }
 
 form {

@@ -4,13 +4,13 @@
       <div class="username">{{ user.email }}</div>
       <div class="stats-row">
         <div class="stat">
-          Posts <br> {{ user.postsCount ?? user.posts?.length ?? 0 }}
+          Posts <br> {{ user.posts?.length || 0 }}
         </div>
         <div class="stat">
-          Following <br> {{ user.followingCount ?? user.following?.length ?? 0 }}
+          Following <br> {{ user.following?.length || 0 }}
         </div>
         <div class="stat">
-          Followers <br> {{ user.followersCount ?? user.followers?.length ?? 0 }}
+          Followers <br> {{ user.followers?.length || 0 }}
         </div>
       </div>
     </div>
