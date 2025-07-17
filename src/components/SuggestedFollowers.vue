@@ -1,48 +1,142 @@
 <template>
   <div class="suggested-followers">
     <p class="title">Users to Follow</p>
-    <div v-if="users.length === 0">No one to follow right now.</div>
+    <div class="placeholder-text" v-if="userCount < 1">No one to follow right now.</div>
     <ul v-else>
       <li v-for="user in users" :key="user.id" class="user-entry">
-        <RouterLink :to="`/users/${user.id}`">{{ user.username }}</RouterLink>
-        <button v-if="isLoggedIn" @click="follow(user)">Follow</button>
+        <RouterLink :to="`/users/${user.id}`">{{ user.email }}</RouterLink>
+        <button v-if="currentUser && !isAlreadyFollowing(user.id)" @click="follow(user)">Follow</button>
       </li>
     </ul>
   </div>
 </template>
 
-<script setup>
-import { computed } from 'vue'
-import { RouterLink } from 'vue-router'
-import { posts } from '../stores/posts'
+<script>
+import { auth, firestore } from '@/firebaseResources.js'
+import { onAuthStateChanged } from 'firebase/auth'
+import { doc, getDoc, getDocs, collection, query, getCountFromServer } from 'firebase/firestore'
+import { followUser } from '@/utils/userActions.js'
 
-const store = posts()
 
-const props = defineProps({
-  userId: Number
-})
+export default {
+  name: "SuggestedFollowers",
 
-const users = computed(() => {
-  if (props.userId) {
-    const viewedUser = typeof store.getUserById === 'function'
-      ? store.getUserById(props.userId) : null
-    if (!viewedUser || viewedUser.username === store.currentUser) return []
-    return [viewedUser]
+  props: {
+    userId: {
+      type: String,
+      required: false
+    }
+  },
+
+  data() {
+    return {
+      currentUser: null,
+      currentUserData: null,
+      users: [],
+      userCount: 0
+    }
+  },
+
+  async mounted() {
+    onAuthStateChanged(auth, async (user) => {
+      this.currentUser = user
+      await this.loadCurrentUserData()
+      this.loadUsers()
+      this.getUserCount()
+    })
+  },
+
+  methods: {
+    async follow(targetUser) {
+      try {
+        await followUser(targetUser.id)
+        console.log(`Successfully followed ${targetUser.email}`)
+        await this.loadCurrentUserData()
+        this.loadUsers()
+      }
+      catch (error) {
+        alert(`${error}: Failed to follow user. Please try again.`)
+      }
+    },
+
+    isAlreadyFollowing(userId) {
+      if (!this.currentUserData || !this.currentUserData.following) {
+        return false
+      }
+      return this.currentUserData.following.includes(userId)
+    },
+
+    async loadUsers() {
+      try {
+        if (this.userId) {
+          const userDoc = await getDoc(doc(firestore, "users", this.userId))
+          if (userDoc.exists() && userDoc.id !== this.currentUser?.uid) {
+            this.users = [{
+              id: userDoc.id,
+              ...userDoc.data()
+            }]
+          }
+          else {
+            this.users = []
+          }
+        }
+        else {
+          // load all users except current user
+          const usersRef = collection(firestore, "users")
+          const querySnapshot = await getDocs(query(usersRef))
+          let allUsers = querySnapshot.docs
+            .map(doc => ({
+              id: doc.id,
+              ...doc.data()
+            }))
+
+          if (this.currentUser) {
+            const followingIds = this.currentUserData?.following || []
+            allUsers = allUsers.filter(user => user.id !== this.currentUser.uid && !followingIds.includes(user.id)
+            )
+          }
+
+          // randomly select 5 users
+          const shuffled = [...allUsers].sort(() => 0.5 - Math.random())
+          this.users = shuffled.slice(0, 5)
+        }
+      }
+      catch (error) {
+        console.error("Error loading users:", error)
+        this.users = []
+      }
+    },
+
+    async getUserCount() {
+      try {
+        const snapshot = await getCountFromServer(collection(firestore, "users"))
+        this.userCount = snapshot.data().count
+      }
+      catch (error) {
+        alert("Error getting user count:", error)
+        this.userCount = 0
+      }
+    },
+
+    async loadCurrentUserData() {
+      if (!this.currentUser) {
+        this.currentUserData = null
+        return
+      }
+
+      try {
+        const userDoc = await getDoc(doc(firestore, "users", this.currentUser.uid))
+        if (userDoc.exists()) {
+          this.currentUserData = userDoc.data()
+        }
+      }
+      catch (error) {
+        console.error("Error loading current user data:", error)
+        this.currentUserData = null
+      }
+    }
   }
-
-  return store.users.filter(u => u.id !== store.currentUser?.id)
-})
-
-const isLoggedIn = computed(() => store.isLoggedIn)
-
-function follow(user) {
-  alert(`Followed ${user.username}`)
-  user.incrementFollowersCount()
 }
-
-console.log('props.userId:', props.userId)
-console.log('viewedUser:', store.getUserById(props.userId))
-console.log('currentUser:', store.currentUser)
 </script>
 
 
@@ -89,4 +183,5 @@ console.log('currentUser:', store.currentUser)
 .user-entry button:hover {
   background-color: #369e6f;
 }
+
 </style>

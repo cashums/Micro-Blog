@@ -1,8 +1,3 @@
-<script setup>
-import { RouterView } from 'vue-router'
-import NavigationBar from './components/NavigationBar.vue'
-</script>
-
 <template>
   <header>
     <div id="app">
@@ -12,6 +7,20 @@ import NavigationBar from './components/NavigationBar.vue'
     </div>
   </header>
 </template>
+
+<script>
+import { RouterView } from 'vue-router'
+import NavigationBar from './components/NavigationBar.vue'
+
+export default {
+  name: "App",
+
+  components: {
+    RouterView,
+    NavigationBar
+  }
+}
+</script>
 
 <style>
 body {
@@ -83,6 +92,13 @@ body {
   flex-direction: column;
   align-items: center;
 } */
+
+.placeholder-text {
+  font-family: Courier, sans-serif;
+  font-weight: bold;
+  color: black;
+  text-decoration: none;
+}
 </style>
 
 <style scoped>
@@ -120,7 +136,6 @@ nav a:first-of-type {
 @media (min-width: 1024px) {
   header {
     display: flex;
-    /* place-items: center; */
     padding-right: calc(var(--section-gap) / 2);
   }
 

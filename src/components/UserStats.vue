@@ -1,16 +1,16 @@
 <template>
   <div class="user-stats">
     <div v-if="user">
-      <div class="username">{{ user.username }}</div>
+      <div class="username">{{ user.email }}</div>
       <div class="stats-row">
         <div class="stat">
-          Posts <br> {{ user.postsCount ?? user.posts?.length ?? 0 }}
+          Posts <br> {{ user.posts?.length || 0 }}
         </div>
         <div class="stat">
-          Following <br> {{ user.followingCount ?? user.following?.length ?? 0 }}
+          Following <br> {{ user.following?.length || 0 }}
         </div>
         <div class="stat">
-          Followers <br> {{ user.followersCount ?? user.followers?.length ?? 0 }}
+          Followers <br> {{ user.followers?.length || 0 }}
         </div>
       </div>
     </div>
@@ -20,28 +20,90 @@
   </div>
 </template>
 
-<script setup>
-import { computed } from 'vue'
+<script>
 import { RouterLink } from 'vue-router'
-import { posts } from '../stores/posts'
+import { auth, firestore } from '@/firebaseResources.js'
+import { onAuthStateChanged } from 'firebase/auth'
+import { doc, getDoc } from 'firebase/firestore'
 
-const store = posts()
+export default {
+  name: "UserStats",
 
-// Props for optional override
-const props = defineProps({
-  userId: Number, // If provided, show this user's stats
-})
+  components: {
+    RouterLink
+  },
 
-// Compute the user to display: viewed user or current user
-const user = computed(() => {
-  if (props.userId) {
-    return store.getUserById(props.userId)
+  props: {
+    userId: {
+      type: String,
+      required: false
+    }
+  },
+
+  data() {
+    return {
+      currentUser: null,
+      user: null,
+      loading: true
+    }
+  },
+
+  async mounted() {
+    onAuthStateChanged(auth, async (authUser) => {
+      this.currentUser = authUser
+      await this.loadUserData()
+    })
+  },
+
+  methods: {
+    async loadUserData() {
+      try {
+        if (this.userId) {
+          const userDoc = await getDoc(doc(firestore, "users", this.userId))
+          if (userDoc.exists()) {
+            this.user = {
+              id: userDoc.id,
+              ...userDoc.data()
+            }
+          }
+          else {
+            this.user = null
+          }
+        }
+        else if (this.currentUser) {
+          const userDoc = await getDoc(doc(firestore, "users", this.currentUser.uid))
+          if (userDoc.exists()) {
+            this.user = {
+              id: userDoc.id,
+              ...userDoc.data()
+            }
+          }
+          else {
+              this.user = null
+            }
+        }
+        else {
+          this.user = null
+        }
+      }
+      catch (error) {
+        console.error("Error loading user data:", error)
+        this.user = null
+      }
+      finally {
+        this.loading = false
+      }
+    }
+  },
+
+  watch: {
+    userId: {
+      handler() {
+        this.loadUserData()
+      }
+    }
   }
-  if (store.isLoggedIn) {
-    return store.users.find(u => u.username === store.currentUser)
-  }
-  return null
-})
+}
 </script>
 
 <style scoped>

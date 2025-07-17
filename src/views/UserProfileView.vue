@@ -1,37 +1,74 @@
-<script setup>
-import { useRoute } from 'vue-router'
-import { posts } from '../stores/posts'
-import UserStats from '../components/UserStats.vue'
-import SuggestedFollowers from '../components/SuggestedFollowers.vue'
-import PostFeed from '../components/PostFeed.vue'
-
-const route = useRoute()
-const userId = Number(route.params.id)
-
-const store = posts()
-
-const viewedUser = store.getUserById(userId)
-const userPosts = store.getPostsByUser(userId)
-</script>
-
 <template>
-  <main class="page-layout">
+  <div class="placeholder-text" v-if="loading">
+    Loading user...
+  </div>
+  <main v-else-if="viewedUser" class="page-layout">
     <div class="sidebar">
-      <UserStats
-        :userId=viewedUser.id
-      />
+      <UserStats :userId="viewedUser.id" />
     </div>
     <div class="main-feed">
-      <PostFeed
-        :posts=userPosts
-      />
+      <PostFeed :userId="viewedUser.id" />
     </div>
     <div class="suggested-followers">
       <SuggestedFollowers :userId="viewedUser.id" />
     </div>
   </main>
+  <div v-else>
+    User not found
+  </div>
 </template>
 
-<!-- <style scoped>
+<script>
+import { firestore } from '@/firebaseResources.js'
+import { doc, getDoc } from 'firebase/firestore'
+import UserStats from '../components/UserStats.vue'
+import SuggestedFollowers from '../components/SuggestedFollowers.vue'
+import PostFeed from '../components/PostFeed.vue'
 
-</style> -->
+export default {
+  name: "UserProfileView",
+
+  components: {
+    UserStats,
+    SuggestedFollowers,
+    PostFeed
+  },
+
+  data() {
+    return {
+      viewedUser: null,
+      loading: true,
+      userId: String(this.$route.params.id)
+    }
+  },
+
+  async mounted() {
+    await this.loadUser()
+  },
+
+  methods: {
+    async loadUser() {
+      try {
+        const userDoc = await getDoc(doc(firestore, "users", this.userId))
+        if (userDoc.exists()) {
+          this.viewedUser = {
+            id: userDoc.id,
+            ...userDoc.data()
+          }
+        }
+        else {
+          console.error("User not found")
+          this.viewedUser = null
+        }
+      }
+      catch (error) {
+        console.error("Error loading user:", error)
+        this.viewedUser = null
+      }
+      finally {
+        this.loading = false
+      }
+    }
+  }
+}
+</script>

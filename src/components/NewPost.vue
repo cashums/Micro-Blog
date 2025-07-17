@@ -1,5 +1,5 @@
 <template>
-  <div v-if="store.isLoggedIn" class="post-input">
+  <div v-if="currentUser" class="post-input">
     <h3>Create a Post</h3>
     <textarea
       v-model="content"
@@ -11,28 +11,82 @@
   </div>
 </template>
 
-<script setup>
-import { ref } from 'vue'
-import { posts } from '../stores/posts'
+<script>
+import { auth, firestore } from '@/firebaseResources.js'
+import { onAuthStateChanged } from 'firebase/auth'
+import { doc, addDoc, collection, updateDoc, arrayUnion, getDoc } from 'firebase/firestore'
 
-const store = posts()
-const content = ref('')
+export default {
+  name: "NewPost",
 
-function handlePost() {
-  if (content.value.trim() === '') {
-    alert('Post cannot be empty.')
-    return
+  data() {
+    return {
+      currentUser: null,
+      content: ""
+    }
+  },
+
+  mounted() {
+    onAuthStateChanged(auth, (user) => {
+      this.currentUser = user
+    })
+  },
+
+  methods: {
+    async handlePost() {
+      if (this.content.trim() === "") {
+        alert("Post cannot be empty.")
+        return
+      }
+
+      if (!this.currentUser) {
+        alert("You must be logged in to post.")
+        return
+      }
+
+      try {
+        const postData = {
+          timestamp: new Date(),
+          author: this.currentUser.email,
+          content: this.content
+        }
+
+        const postRef = await addDoc(collection(firestore, "posts"), postData)
+        const postId = postRef.id
+
+        await updateDoc(doc(firestore, "users", this.currentUser.uid), {
+          posts: arrayUnion(postId)
+        })
+
+        await this.addToFollowerFeeds(postId)
+
+        console.log('Post created successfully!')
+        this.content = ""
+      }
+      catch (error) {
+        console.error('Error creating post:', error)
+        alert('Failed to create post. Please try again.')
+      }
+    },
+
+    async addToFollowerFeeds(postId) {
+      try {
+        const userDoc = await getDoc(doc(firestore, "users", this.currentUser.uid))
+        const followers = userDoc.data()?.followers || []
+
+        const updatePromises = followers.map(followerId =>
+          updateDoc(doc(firestore, "users", followerId), {
+            feed: arrayUnion(postId)
+          })
+        )
+
+        await Promise.all(updatePromises)
+      }
+      catch (error) {
+        console.error('Error updating follower feeds:', error)
+      }
+    }
   }
-
-  store.posts.push({
-    id: store.posts.length + 1,
-    username: store.currentUser,
-    userId: store.users.find(u => u.username === store.currentUser)?.id,
-    date: new Date().toISOString().slice(0, 10),
-    time: new Date().toLocaleTimeString(),
-    content: content.value
-  })
-  content.value = ''
 }
 </script>
 
