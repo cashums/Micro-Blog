@@ -205,7 +205,8 @@ export default {
 
         await html2pdf().set(options).from(element).save()
         console.log('Archive downloaded as PDF successfully')
-      } catch (error) {
+      }
+      catch (error) {
         console.error('Error downloading archive as PDF:', error)
         alert('Failed to download archive as PDF. Please try again.')
       }
@@ -342,19 +343,23 @@ export default {
 }
 
 .archive-header h1 {
-  font-family: Courier, sans-serif;
-  color: #333;
+  font-family: Helvetica, sans-serif;
+  font-weight: bold;
+  font-style: italic;
+  color: black;
   margin: 0;
 }
 
 .btn-create {
-  background-color: #333;
-  color: white;
+  background-color: #d7c2a2;
+  color: black;
   border: none;
   padding: 0.75rem 1.5rem;
   border-radius: 4px;
   cursor: pointer;
-  font-family: Courier, sans-serif;
+  font-family: Helvetica, sans-serif;
+  font-weight: bold;
+  font-style: italic;
 }
 
 .btn-create:hover {
