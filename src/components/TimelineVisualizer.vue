@@ -191,7 +191,6 @@
       <button @click="createSnapshotArchive" class="btn-archive">
         Create Archive from this Snapshot
       </button>
-      <button @click="viewFullData" class="btn-view">View All Data</button>
     </div>
   </div>
 </template>
@@ -607,15 +606,6 @@ export default {
         console.error("Error creating snapshot archive:", error);
         alert("Failed to create snapshot archive. Please try again.");
       }
-    },
-
-    viewFullData() {
-      this.$router.push({
-        name: "HistoricalSearch",
-        query: {
-          date: this.selectedTimePoint.date.toISOString().split("T")[0]
-        }
-      });
     },
 
     async resetToFullRange() {

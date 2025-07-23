@@ -10,7 +10,7 @@
           user.email.toUpperCase()
         }}</RouterLink>
         <button
-          style="margin-left: 0.5rem"
+          style="margin-left: 0.5rem; font-family: Helvetica, sans-serif; font-weight: bold; font-style: italic;"
           v-if="currentUser && !isAlreadyFollowing(user.id)"
           @click="follow(user)"
         >
@@ -166,7 +166,7 @@ export default {
     background-color: #d7c2a2;
     padding: 1rem;
     border-radius: 12px;
-    width: 290px;
+    width: 350px;
   }
 
   .title {
