@@ -5,14 +5,14 @@
 </template>
 
 <script setup>
-import LoginBox from '../components/LoginBox.vue'
+import LoginBox from "../components/LoginBox.vue";
 </script>
 
 <style scoped>
-.login-view {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  min-height: 60vh;
-}
+  .login-view {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 60vh;
+  }
 </style>

@@ -1,16 +1,19 @@
 <template>
   <div class="user-stats">
     <div v-if="user">
-      <div class="username">{{ user.email }}</div>
+      <div class="username">{{ user.email.toUpperCase() }}</div>
       <div class="stats-row">
         <div class="stat">
-          Posts <br> {{ user.posts?.length || 0 }}
+          POSTS <br />
+          {{ user.posts?.length || 0 }}
         </div>
         <div class="stat">
-          Following <br> {{ user.following?.length || 0 }}
+          FOLLOWING <br />
+          {{ user.following?.length || 0 }}
         </div>
         <div class="stat">
-          Followers <br> {{ user.followers?.length || 0 }}
+          FOLLOWERS <br />
+          {{ user.followers?.length || 0 }}
         </div>
       </div>
     </div>
@@ -21,10 +24,10 @@
 </template>
 
 <script>
-import { RouterLink } from 'vue-router'
-import { auth, firestore } from '@/firebaseResources.js'
-import { onAuthStateChanged } from 'firebase/auth'
-import { doc, getDoc } from 'firebase/firestore'
+import { RouterLink } from "vue-router";
+import { auth, firestore } from "@/firebaseResources.js";
+import { onAuthStateChanged } from "firebase/auth";
+import { doc, getDoc } from "firebase/firestore";
 
 export default {
   name: "UserStats",
@@ -45,53 +48,55 @@ export default {
       currentUser: null,
       user: null,
       loading: true
-    }
+    };
   },
 
   async mounted() {
     onAuthStateChanged(auth, async (authUser) => {
-      this.currentUser = authUser
-      await this.loadUserData()
-    })
+      this.currentUser = authUser;
+      await this.loadUserData();
+    });
   },
 
   methods: {
     async loadUserData() {
       try {
         if (this.userId) {
-          const userDoc = await getDoc(doc(firestore, "users", this.userId))
+          const userDoc = await getDoc(doc(firestore, "users", this.userId));
           if (userDoc.exists()) {
             this.user = {
               id: userDoc.id,
               ...userDoc.data()
-            }
+            };
           }
           else {
-            this.user = null
+            this.user = null;
           }
         }
         else if (this.currentUser) {
-          const userDoc = await getDoc(doc(firestore, "users", this.currentUser.uid))
+          const userDoc = await getDoc(
+            doc(firestore, "users", this.currentUser.uid)
+          );
           if (userDoc.exists()) {
             this.user = {
               id: userDoc.id,
               ...userDoc.data()
-            }
+            };
           }
           else {
-              this.user = null
-            }
+            this.user = null;
+          }
         }
         else {
-          this.user = null
+          this.user = null;
         }
       }
       catch (error) {
-        console.error("Error loading user data:", error)
-        this.user = null
+        console.error("Error loading user data:", error);
+        this.user = null;
       }
       finally {
-        this.loading = false
+        this.loading = false;
       }
     }
   },
@@ -99,52 +104,51 @@ export default {
   watch: {
     userId: {
       handler() {
-        this.loadUserData()
+        this.loadUserData();
       }
     }
   }
-}
+};
 </script>
 
 <style scoped>
-.user-stats {
-  background-color: #d7c2a2;
-  padding: 1rem;
-  width: 300px;
-  text-align: center;
-  border-radius: 12px;
-}
+  .user-stats {
+    background-color: #d7c2a2;
+    padding: 1rem;
+    width: 300px;
+    text-align: center;
+    border-radius: 12px;
+  }
 
-.username {
-  text-align: center;
-  font-family: Helvetica, sans-serif;
-  font-weight: bold;
-  font-style: italic;
-  color: navy;
-}
+  .username {
+    text-align: center;
+    font-family: Helvetica, sans-serif;
+    font-weight: bold;
+    font-style: italic;
+    color: navy;
+  }
 
-.user-stats p,
-.user-stats a {
-  font-family: Courier, sans-serif;
-  font-weight: bold;
-  color: black;
-  text-decoration: none;
-}
+  .user-stats p,
+  .user-stats a {
+    font-family: Courier, sans-serif;
+    font-weight: bold;
+    color: black;
+    text-decoration: none;
+  }
 
-.user-stats a:hover {
-  text-decoration: underline;
-}
+  .user-stats a:hover {
+    text-decoration: underline;
+  }
 
-.stats-row {
-  display: flex;
-  justify-content: space-around;
-  text-align: center;
-}
+  .stats-row {
+    display: flex;
+    justify-content: space-around;
+    text-align: center;
+  }
 
-.stat {
-  font-family: Courier, sans-serif;
-  color: black;
-  text-decoration: none;
-}
-
+  .stat {
+    font-family: Courier, sans-serif;
+    color: black;
+    text-decoration: none;
+  }
 </style>

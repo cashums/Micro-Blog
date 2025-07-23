@@ -1,9 +1,9 @@
 <template>
   <div v-if="currentUser" class="post-input">
-    <h3>Create a Post</h3>
+    <h3>CREATE A POST</h3>
     <textarea
       v-model="content"
-      placeholder="What's on your mind?"
+      placeholder="SHOUT IT OUT!"
       rows="3"
       class="post-textarea"
     ></textarea>
@@ -12,9 +12,16 @@
 </template>
 
 <script>
-import { auth, firestore } from '@/firebaseResources.js'
-import { onAuthStateChanged } from 'firebase/auth'
-import { doc, addDoc, collection, updateDoc, arrayUnion, getDoc } from 'firebase/firestore'
+import { auth, firestore } from "@/firebaseResources.js";
+import { onAuthStateChanged } from "firebase/auth";
+import {
+  doc,
+  addDoc,
+  collection,
+  updateDoc,
+  arrayUnion,
+  getDoc
+} from "firebase/firestore";
 
 export default {
   name: "NewPost",
@@ -23,111 +30,134 @@ export default {
     return {
       currentUser: null,
       content: ""
-    }
+    };
   },
 
   mounted() {
     onAuthStateChanged(auth, (user) => {
-      this.currentUser = user
-    })
+      this.currentUser = user;
+    });
   },
 
   methods: {
+    async fetchUserEmail(uid) {
+      try {
+        const userDoc = await getDoc(doc(firestore, "users", uid));
+        if (userDoc.exists()) {
+          return userDoc.data().email;
+        }
+        else {
+          console.error(`User with UID ${uid} not found.`);
+          return null;
+        }
+      }
+      catch (error) {
+        console.error("Error fetching user email:", error);
+        return null;
+      }
+    },
+
     async handlePost() {
       if (this.content.trim() === "") {
-        alert("Post cannot be empty.")
-        return
+        alert("Post cannot be empty.");
+        return;
       }
 
       if (!this.currentUser) {
-        alert("You must be logged in to post.")
-        return
+        alert("You must be logged in to post.");
+        return;
       }
 
       try {
         const postData = {
           timestamp: new Date(),
-          author: this.currentUser.email,
-          content: this.content
-        }
+          email: this.currentUser.email,
+          author: this.currentUser.uid,
+          content: this.content.toUpperCase()
+        };
 
-        const postRef = await addDoc(collection(firestore, "posts"), postData)
-        const postId = postRef.id
+        const postRef = await addDoc(
+          collection(firestore, "posts"),
+          postData
+        );
+        const postId = postRef.id;
 
         await updateDoc(doc(firestore, "users", this.currentUser.uid), {
           posts: arrayUnion(postId)
-        })
+        });
 
-        await this.addToFollowerFeeds(postId)
+        await this.addToFollowerFeeds(postId);
 
-        console.log('Post created successfully!')
-        this.content = ""
+        console.log("Post created successfully!");
+        this.content = "";
       }
       catch (error) {
-        console.error('Error creating post:', error)
-        alert('Failed to create post. Please try again.')
+        console.error("Error creating post:", error);
+        alert("Failed to create post. Please try again.");
       }
     },
 
     async addToFollowerFeeds(postId) {
       try {
-        const userDoc = await getDoc(doc(firestore, "users", this.currentUser.uid))
-        const followers = userDoc.data()?.followers || []
+        const userDoc = await getDoc(
+          doc(firestore, "users", this.currentUser.uid)
+        );
+        const followers = userDoc.data()?.followers || [];
 
-        const updatePromises = followers.map(followerId =>
+        const updatePromises = followers.map((followerId) =>
           updateDoc(doc(firestore, "users", followerId), {
             feed: arrayUnion(postId)
           })
-        )
+        );
 
-        await Promise.all(updatePromises)
+        await Promise.all(updatePromises);
       }
       catch (error) {
-        console.error('Error updating follower feeds:', error)
+        console.error("Error updating follower feeds:", error);
       }
     }
   }
-}
+};
 </script>
 
 <style scoped>
-h3 {
-  font-family: Helvetica, sans-serif;
-  font-weight: bold;
-  font-style: italic;
-  color: black;
-  margin-bottom: 0.5rem;
-}
+  h3 {
+    font-family: Helvetica, sans-serif;
+    font-weight: bold;
+    font-style: italic;
+    color: black;
+    margin-bottom: 0.5rem;
+  }
 
-.post-input {
-  background-color: #d7c2a2;
-  padding: 1rem;
-  border-radius: 8px;
-  margin-bottom: 1rem;
-  width: 300px;
-  box-sizing: border-box;
-}
+  .post-input {
+    background-color: #d7c2a2;
+    padding: 1rem;
+    border-radius: 8px;
+    margin-bottom: 1rem;
+    width: 300px;
+    box-sizing: border-box;
+  }
 
-.post-textarea {
-  width: 100%;
-  padding: 0.5rem;
-  margin-bottom: 0.5rem;
-  border-radius: 4px;
-  border: 1px solid #ccc;
-  resize: vertical;
-  font-size: 1rem;
-}
+  .post-textarea {
+    width: 100%;
+    padding: 0.5rem;
+    margin-bottom: 0.5rem;
+    border-radius: 4px;
+    border: 1px solid #ccc;
+    resize: vertical;
+    font-size: 1rem;
+  }
 
-.post-btn {
-  padding: 0.5rem 1rem;
-  background-color: black;
-  color: white;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-}
+  .post-btn {
+    padding: 0.5rem 1rem;
+    background-color: black;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+  }
 
-.post-btn:hover {
-  background-color: #333;
-}
+  .post-btn:hover {
+    background-color: #333;
+  }
 </style>
