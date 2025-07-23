@@ -71,7 +71,6 @@ export default {
         if (archiveDoc.exists()) {
           const archiveData = archiveDoc.data();
 
-          // Ensure createdAt is properly converted to a Date object
           archiveData.createdAt = archiveData.createdAt?.toDate
             ? archiveData.createdAt.toDate()
             : new Date(archiveData.createdAt);
@@ -103,12 +102,11 @@ export default {
       this.loadingPosts = true;
 
       try {
-        // Fetch posts by their IDs
         const postPromises = this.archive.posts.map(async (postId) => {
           const postDoc = await getDoc(doc(firestore, "posts", postId));
           if (postDoc.exists()) {
             const postData = postDoc.data();
-            // Get user email for the post author
+
             let authorEmail = "Unknown User";
             try {
               const userDoc = await getDoc(
@@ -134,7 +132,6 @@ export default {
         const posts = await Promise.all(postPromises);
         this.archivePosts = posts.filter((post) => post !== null);
 
-        // Sort posts by timestamp (newest first)
         this.archivePosts.sort((a, b) => {
           const timestampA = a.timestamp?.toDate
             ? a.timestamp.toDate()
@@ -156,9 +153,8 @@ export default {
 
     async downloadArchivePdf(event, archive) {
       try {
-        // Fetch full post data from Firestore using the stored post IDs
         const fullPosts = [];
-        const userEmailCache = {}; // Cache to avoid duplicate user lookups
+        const userEmailCache = {};
 
         if (archive.posts && archive.posts.length > 0) {
           for (const postId of archive.posts) {
@@ -170,7 +166,6 @@ export default {
                   ...postDoc.data()
                 };
 
-                // Fetch user email if we haven't cached it yet
                 if (postData.author && !userEmailCache[postData.author]) {
                   try {
                     const userDoc = await getDoc(
@@ -192,7 +187,6 @@ export default {
                   }
                 }
 
-                // Add the email to the post data
                 postData.authorEmail =
                     userEmailCache[postData.author] || "Unknown User";
                 fullPosts.push(postData);

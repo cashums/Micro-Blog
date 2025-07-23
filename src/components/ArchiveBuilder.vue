@@ -139,7 +139,7 @@
           <div class="filter-group">
             <label>
               <input type="checkbox" v-model="filters.users.enabled" />
-              Specific Users
+              Specific User
             </label>
             <div v-if="filters.users.enabled" class="user-filter">
               <input
@@ -383,15 +383,16 @@ export default {
         console.log("Active filters count:", this.activeFiltersCount);
         console.log("Can generate:", this.canGenerate);
         console.log("Users selected:", this.filters.users.selected);
-        
-        // Fetch filtered posts
+
         console.log("Fetching filtered posts...");
         const posts = await this.fetchFilteredPosts();
         console.log("Posts fetched:", posts.length);
-        console.log("Sample posts:", posts.slice(0, 3)); // Show first 3 posts
+        console.log("Sample posts:", posts.slice(0, 3));
 
         if (posts.length === 0) {
-          alert("No posts match your filter criteria. Please adjust your filters and try again.");
+          alert(
+            "No posts match your filter criteria. Please adjust your filters and try again."
+          );
           return;
         }
 
@@ -438,7 +439,9 @@ export default {
         console.error("Detailed error creating archive:", error);
         console.error("Error message:", error.message);
         console.error("Error code:", error.code);
-        alert(`Failed to create archive: ${error.message}. Please try again.`);
+        alert(
+          `Failed to create archive: ${error.message}. Please try again.`
+        );
       }
     },
 
@@ -470,11 +473,10 @@ export default {
 
         let postsQuery;
 
-        // Handle the case where only user filter is enabled
         if (
           this.filters.users.enabled &&
-          this.filters.users.selected.length === 1 &&
-          !this.filters.dateRange.enabled
+            this.filters.users.selected.length === 1 &&
+            !this.filters.dateRange.enabled
         ) {
           console.log("Using user-only filter");
           postsQuery = query(
@@ -482,12 +484,11 @@ export default {
             where("email", "==", this.filters.users.selected[0])
           );
         }
-        // Handle the case where only date range is enabled
         else if (
           this.filters.dateRange.enabled &&
-          this.filters.dateRange.start &&
-          this.filters.dateRange.end &&
-          !this.filters.users.enabled
+            this.filters.dateRange.start &&
+            this.filters.dateRange.end &&
+            !this.filters.users.enabled
         ) {
           console.log("Using date-only filter");
           const startDate = new Date(this.filters.dateRange.start);
@@ -499,19 +500,17 @@ export default {
             orderBy("timestamp", "desc")
           );
         }
-        // Handle both date and user filters
         else if (
           this.filters.dateRange.enabled &&
-          this.filters.users.enabled &&
-          this.filters.dateRange.start &&
-          this.filters.dateRange.end &&
-          this.filters.users.selected.length > 0
+            this.filters.users.enabled &&
+            this.filters.dateRange.start &&
+            this.filters.dateRange.end &&
+            this.filters.users.selected.length > 0
         ) {
           console.log("Using combined date and user filters");
           const startDate = new Date(this.filters.dateRange.start);
           const endDate = new Date(this.filters.dateRange.end);
 
-          // First get posts by date range
           const dateQuery = query(
             collection(firestore, "posts"),
             where("timestamp", ">=", startDate),
@@ -525,14 +524,12 @@ export default {
             ...doc.data()
           }));
 
-          // Then filter by users client-side
           posts = posts.filter((post) =>
             this.filters.users.selected.includes(post.email)
           );
 
           return posts;
         }
-        // Default case - get all posts
         else {
           console.log("Using default query (all posts)");
           postsQuery = query(
@@ -550,10 +547,9 @@ export default {
 
         console.log("Raw posts from query:", posts.length);
 
-        // Apply keyword filtering if enabled
         if (
           this.filters.keywords.enabled &&
-          this.filters.keywords.selected.length > 0
+            this.filters.keywords.selected.length > 0
         ) {
           console.log("Applying keyword filter");
           posts = posts.filter((post) =>
@@ -565,7 +561,7 @@ export default {
 
         console.log("Final filtered posts:", posts.length);
         return posts;
-      } 
+      }
       catch (error) {
         console.error("Error fetching filtered posts:", error);
         return [];
@@ -574,9 +570,8 @@ export default {
 
     async downloadArchivePdf(event, archive) {
       try {
-        // Fetch full post data from Firestore using the stored post IDs
         const fullPosts = [];
-        const userEmailCache = {}; // Cache to avoid duplicate user lookups
+        const userEmailCache = {};
 
         if (archive.posts && archive.posts.length > 0) {
           for (const postId of archive.posts) {
@@ -588,18 +583,14 @@ export default {
                   ...postDoc.data()
                 };
 
-                // Fetch user email if we haven't cached it yet
                 if (postData.author && !userEmailCache[postData.author]) {
                   try {
                     const userDoc = await getDoc(
                       doc(firestore, "users", postData.author)
                     );
-                    if (userDoc.exists()) {
-                      userEmailCache[postData.author] = userDoc.data().email;
-                    }
-                    else {
-                      userEmailCache[postData.author] = "Unknown User";
-                    }
+                    userEmailCache[postData.author] = userDoc.exists()
+                      ? userDoc.data().email
+                      : "Unknown User";
                   }
                   catch (userError) {
                     console.error(
@@ -610,7 +601,6 @@ export default {
                   }
                 }
 
-                // Add the email to the post data
                 postData.authorEmail =
                     userEmailCache[postData.author] || "Unknown User";
                 fullPosts.push(postData);
@@ -743,7 +733,11 @@ export default {
       const date = timestamp.toDate
         ? timestamp.toDate()
         : new Date(timestamp);
-      return date.toLocaleTimeString();
+      return date.toLocaleTimeString("en-US", {
+        hour: "2-digit",
+        minute: "2-digit",
+        second: "2-digit"
+      });
     },
 
     async loadArchives() {
@@ -806,7 +800,11 @@ export default {
       const date = timestamp.toDate
         ? timestamp.toDate()
         : new Date(timestamp);
-      return date.toLocaleDateString();
+      return date.toLocaleDateString("en-US", {
+        year: "numeric",
+        month: "long",
+        day: "numeric"
+      });
     },
 
     formatDateRange(dateRange) {

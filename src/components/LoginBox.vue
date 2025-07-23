@@ -88,7 +88,6 @@ export default {
     },
 
     async handleSignup() {
-      // https://www.youtube.com/watch?v=G8BRVETdLVY - How to Validate a Password Using JavaScript (Simple)
       if (this.password.length > 16) {
         this.password = "";
         return alert("Password must be 16 characters or less.");

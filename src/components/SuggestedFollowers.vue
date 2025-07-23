@@ -99,7 +99,6 @@ export default {
           }
         }
         else {
-          // load all users except current user
           const usersRef = collection(firestore, "users");
           const querySnapshot = await getDocs(query(usersRef));
           let allUsers = querySnapshot.docs.map((doc) => ({
@@ -116,7 +115,6 @@ export default {
             );
           }
 
-          // randomly select 5 users
           const shuffled = [...allUsers].sort(() => 0.5 - Math.random());
           this.users = shuffled.slice(0, 5);
         }

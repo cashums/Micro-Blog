@@ -18,10 +18,10 @@ export default {
 
 <style scoped>
   .timeline-view {
-    width: 100%; /* Ensure it spans the full width */
-    min-height: 100vh; /* Ensure it fills the viewport height */
+    width: 100%;
+    min-height: 100vh;
     display: flex;
-    justify-content: center; /* Center the content horizontally */
+    justify-content: center;
     align-items: flex-start;
   }
 </style>

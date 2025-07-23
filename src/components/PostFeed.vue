@@ -62,7 +62,6 @@ export default {
         let posts = [];
 
         if (this.userId) {
-          // viewing specific user's profile - show their posts
           const userDoc = await getDoc(doc(firestore, "users", this.userId));
           const userPostIds = userDoc.data()?.posts || [];
 
@@ -79,7 +78,6 @@ export default {
           }
         }
         else if (this.currentUser) {
-          // home page AND logged in - show user's feed
           const userDoc = await getDoc(
             doc(firestore, "users", this.currentUser.uid)
           );
@@ -102,7 +100,6 @@ export default {
           }
         }
         else {
-          // home page and NOT logged in - show recent posts
           const postsQuery = query(
             collection(firestore, "posts"),
             orderBy("timestamp", "desc"),

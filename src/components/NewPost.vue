@@ -44,7 +44,7 @@ export default {
       try {
         const userDoc = await getDoc(doc(firestore, "users", uid));
         if (userDoc.exists()) {
-          return userDoc.data().email; // Return the user's email
+          return userDoc.data().email;
         }
         else {
           console.error(`User with UID ${uid} not found.`);

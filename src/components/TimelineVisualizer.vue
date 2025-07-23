@@ -1,11 +1,9 @@
 <template>
   <div class="timeline-visualizer">
-    <!-- Timeline Header -->
     <div class="timeline-header">
       <h1>Platform Timeline</h1>
       <p>Explore the evolution of CapsLock through time</p>
 
-      <!-- Date Range Selector -->
       <div class="date-controls">
         <div class="date-input-group">
           <label>From:</label>
@@ -31,16 +29,12 @@
       </div>
     </div>
 
-    <!-- Timeline Visualization -->
     <div class="timeline-container">
-      <!-- Loading State -->
       <div v-if="loading" class="loading-state">
         <p>📊 Loading timeline data...</p>
       </div>
 
-      <!-- Main Timeline -->
       <div v-else class="timeline-main">
-        <!-- Activity Chart -->
         <div class="activity-chart">
           <h3>Post Activity Over Time</h3>
           <div class="chart-container">
@@ -54,7 +48,7 @@
                 stroke="#d73027"
                 stroke-width="3"
               ></polyline>
-              <!-- Data points -->
+
               <circle
                 v-for="(point, index) in activityBars"
                 :key="index"
@@ -69,7 +63,6 @@
               />
             </svg>
 
-            <!-- Tooltip for activity -->
             <div
               v-if="activityTooltip.visible"
               class="activity-tooltip"
@@ -99,7 +92,6 @@
           </div>
         </div>
 
-        <!-- User Growth Chart -->
         <div class="growth-chart">
           <h3>User Growth</h3>
           <div class="chart-container">
@@ -113,7 +105,7 @@
                 stroke="#007acc"
                 stroke-width="3"
               ></polyline>
-              <!-- Data points -->
+
               <circle
                 v-for="(point, index) in userGrowthData"
                 :key="index"
@@ -128,7 +120,6 @@
               />
             </svg>
 
-            <!-- Tooltip for user growth -->
             <div
               v-if="userTooltip.visible"
               class="user-tooltip"
@@ -144,7 +135,6 @@
                 <p>{{ userTooltip.activeUsers }} Active Users</p>
               </div>
             </div>
-
           </div>
         </div>
 
@@ -159,11 +149,9 @@
             <div class="marker-label">{{ marker.label }}</div>
           </div>
         </div>
-
       </div>
     </div>
 
-    <!-- Selected Time Point Details -->
     <div v-if="selectedTimePoint" class="time-snapshot">
       <div class="snapshot-header">
         <button
@@ -259,11 +247,9 @@ export default {
         count: 0
       },
 
-      // Computed timeline properties
       timeMarkers: [],
       userGrowthPoints: "",
-      activityPoints: "",
-
+      activityPoints: ""
     };
   },
 
@@ -276,7 +262,6 @@ export default {
 
   methods: {
     generateActivityBars() {
-      // Group posts by day
       const dailyActivity = {};
 
       this.timelineData.forEach((post) => {
@@ -284,38 +269,40 @@ export default {
         dailyActivity[dateKey] = (dailyActivity[dateKey] || 0) + 1;
       });
 
-      // Convert to array and sort by date
       const dailyActivityArray = Object.entries(dailyActivity)
         .map(([dateStr, count]) => ({
           date: new Date(dateStr),
           dailyCount: count,
-          cumulativeCount: 0 // Will be calculated below
+          cumulativeCount: 0
         }))
         .sort((a, b) => a.date - b.date);
 
-      // Calculate cumulative totals
       let cumulativeTotal = 0;
       dailyActivityArray.forEach((point) => {
         cumulativeTotal += point.dailyCount;
         point.cumulativeCount = cumulativeTotal;
       });
 
-      const maxActivity = Math.max(...dailyActivityArray.map(d => d.cumulativeCount), 1);
+      const maxActivity = Math.max(
+        ...dailyActivityArray.map((d) => d.cumulativeCount),
+        1
+      );
 
       this.activityBars = dailyActivityArray.map((point) => {
         return {
           date: point.date,
-          count: point.cumulativeCount, // Use cumulative count for display
-          dailyCount: point.dailyCount, // Keep daily count for tooltip
+          count: point.cumulativeCount,
+          dailyCount: point.dailyCount,
           height: (point.cumulativeCount / maxActivity) * 100,
           position: this.calculateTimePosition(point.date),
           color: this.getActivityColor(point.cumulativeCount, maxActivity),
           x: this.calculateTimePosition(point.date) * (this.chartWidth / 100),
-          y: this.chartHeight - (point.cumulativeCount / maxActivity) * (this.chartHeight - 20)
+          y:
+              this.chartHeight -
+              (point.cumulativeCount / maxActivity) * (this.chartHeight - 20)
         };
       });
 
-      // Generate points string for polyline
       this.activityPoints = this.activityBars
         .map((point) => `${point.x},${point.y}`)
         .join(" ");
@@ -323,18 +310,19 @@ export default {
 
     showActivityTooltip(event, point) {
       const rect = event.target.getBoundingClientRect();
-      const containerRect = event.target.closest('.chart-container').getBoundingClientRect();
-      
+      const containerRect = event.target
+        .closest(".chart-container")
+        .getBoundingClientRect();
+
       this.activityTooltip = {
         visible: true,
         x: rect.left - containerRect.left + 10,
         y: rect.top - containerRect.top - 60,
         date: point.date,
-        count: point.count, // Total posts up to this date
-        dailyCount: point.dailyCount // Posts on this specific day
+        count: point.count,
+        dailyCount: point.dailyCount
       };
     },
-
 
     hideActivityTooltip() {
       this.activityTooltip.visible = false;
@@ -342,16 +330,18 @@ export default {
 
     showUserTooltip(event, point) {
       const rect = event.target.getBoundingClientRect();
-      const containerRect = event.target.closest('.chart-container').getBoundingClientRect();
-      
+      const containerRect = event.target
+        .closest(".chart-container")
+        .getBoundingClientRect();
+
       this.userTooltip = {
         visible: true,
         x: rect.left - containerRect.left + 10,
         y: rect.top - containerRect.top - 60,
         date: point.date,
         totalUsers: point.totalUsers,
-        newUsers: point.users, // Now correctly shows new users
-        activeUsers: point.activeUsers // Add active users info
+        newUsers: point.users,
+        activeUsers: point.activeUsers
       };
     },
 
@@ -376,13 +366,10 @@ export default {
 
     async loadTimelineData() {
       try {
-        // Load posts data
         await this.loadPostsData();
 
-        // Load user registration data
         await this.loadUserData();
 
-        // Process data for visualization
         this.processTimelineData();
       }
       catch (error) {
@@ -393,7 +380,7 @@ export default {
     async loadPostsData() {
       const startDate = new Date(this.dateRange.start);
       const endDate = new Date(this.dateRange.end);
-      endDate.setHours(23, 59, 59, 999); // End of day
+      endDate.setHours(23, 59, 59, 999);
 
       const postsQuery = query(
         collection(firestore, "posts"),
@@ -411,33 +398,31 @@ export default {
     },
 
     async loadUserData() {
-      // Track when each user first appeared (posted) on the platform
       const userFirstAppearance = {};
       const dailyNewUsers = {};
       const dailyActiveUsers = {};
 
-      // Find first appearance date for each user
       for (const post of this.timelineData) {
         const userId = post.author;
         const postDate = post.date;
-        
-        if (!userFirstAppearance[userId] || postDate < userFirstAppearance[userId]) {
+
+        if (
+          !userFirstAppearance[userId] ||
+            postDate < userFirstAppearance[userId]
+        ) {
           userFirstAppearance[userId] = postDate;
         }
       }
 
-      // Count new users and active users per day
       for (const post of this.timelineData) {
         const dateKey = post.date.toDateString();
         const userId = post.author;
-        
-        // Track active users (users who posted on this day)
+
         if (!dailyActiveUsers[dateKey]) {
           dailyActiveUsers[dateKey] = new Set();
         }
         dailyActiveUsers[dateKey].add(userId);
-        
-        // Check if this is the user's first appearance (new user)
+
         const firstAppearanceKey = userFirstAppearance[userId].toDateString();
         if (firstAppearanceKey === dateKey) {
           if (!dailyNewUsers[dateKey]) {
@@ -448,21 +433,20 @@ export default {
       }
 
       this.userGrowthData = Object.keys(dailyActiveUsers)
-        .map(dateKey => {
+        .map((dateKey) => {
           const date = new Date(dateKey);
           return {
             date: date,
-            users: dailyNewUsers[dateKey] ? dailyNewUsers[dateKey].size : 0, // New users on this day
-            activeUsers: dailyActiveUsers[dateKey].size, // Active users on this day
-            totalUsers: 0 // Will be calculated below
+            users: dailyNewUsers[dateKey] ? dailyNewUsers[dateKey].size : 0,
+            activeUsers: dailyActiveUsers[dateKey].size,
+            totalUsers: 0
           };
         })
         .sort((a, b) => a.date - b.date);
 
-      // Calculate cumulative user count (total unique users up to this point)
       let totalUsers = 0;
       this.userGrowthData.forEach((point) => {
-        totalUsers += point.users; // Add new users to running total
+        totalUsers += point.users;
         point.totalUsers = totalUsers;
       });
     },
@@ -480,7 +464,6 @@ export default {
 
       this.timeMarkers = [];
 
-      // Generate 5-7 evenly spaced markers
       const markerCount = Math.min(
         7,
         Math.max(3, Math.floor(totalDays / 30))
@@ -538,7 +521,6 @@ export default {
     },
 
     async selectTimePoint(date) {
-      // Get data for the selected date
       const dayStart = new Date(date);
       dayStart.setHours(0, 0, 0, 0);
       const dayEnd = new Date(date);
@@ -548,7 +530,6 @@ export default {
         (post) => post.date >= dayStart && post.date <= dayEnd
       );
 
-      // Get user emails for the posts
       const userEmailCache = {};
       const samplePosts = [];
 
@@ -601,7 +582,6 @@ export default {
           (post) => post.date >= dayStart && post.date <= dayEnd
         );
 
-        // Sort posts in descending order by timestamp
         dayPosts = dayPosts.sort(
           (a, b) => b.timestamp.toDate() - a.timestamp.toDate()
         );
@@ -630,7 +610,6 @@ export default {
     },
 
     viewFullData() {
-      // Navigate to a detailed view or expand the current view
       this.$router.push({
         name: "HistoricalSearch",
         query: {
@@ -946,7 +925,7 @@ export default {
     border-left: 2px solid #ddd;
     border-radius: 4px;
     width: 100%;
-    overflow: visible; /* Allow tooltip to show outside container */
+    overflow: visible;
   }
 
   .activity-tooltip {
