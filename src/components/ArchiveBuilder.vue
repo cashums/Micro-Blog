@@ -105,12 +105,12 @@
         <h2>Create New Archive</h2>
         <div class="form-group">
           <label>Archive Name:</label>
-          <input
+          <textarea
             type="text"
             v-model="newArchive.name"
             placeholder="Enter archive name..."
-            class="form-input"
-          />
+            class="form-textarea"
+          ></textarea>
         </div>
         <div class="form-group">
           <label>Description:</label>
@@ -243,6 +243,18 @@ export default {
   },
 
   computed: {
+    canGenerate() {
+      return this.newArchive.name.trim().length > 0 && this.activeFiltersCount > 0;
+    },
+
+    activeFiltersCount() {
+      let count = 0;
+      if (this.filters.dateRange.enabled) count++;
+      if (this.filters.users.enabled && this.filters.users.selected.length > 0) count++;
+      if (this.filters.keywords.enabled && this.filters.keywords.selected.length > 0) count++;
+      return count;
+    },
+
     filteredArchives() {
       let filtered = this.archives;
 
@@ -268,7 +280,9 @@ export default {
           return b.postCount - a.postCount;
         case "date":
         default:
-          return b.createdAt.toDate() - a.createdAt.toDate();
+          const dateA = a.createdAt?.toDate ? a.createdAt.toDate() : new Date(a.createdAt);
+          const dateB = b.createdAt?.toDate ? b.createdAt.toDate() : new Date(b.createdAt);
+          return dateB - dateA;
         }
       });
     }
@@ -314,20 +328,18 @@ export default {
           createdBy: this.currentUser.uid,
           createdAt: new Date(),
           postCount: posts.length,
-          filters: {
-            dateRange: this.filters.dateRange.enabled
-              ? {
-                start: this.filters.dateRange.start,
-                end: this.filters.dateRange.end
-              }
-              : null,
-            userFilter: this.filters.users.enabled
-              ? this.filters.users.selected
-              : null,
-            keywords: this.filters.keywords.enabled
-              ? this.filters.keywords.selected
-              : null
-          },
+          dateRange: this.filters.dateRange.enabled
+            ? {
+              start: this.filters.dateRange.start,
+              end: this.filters.dateRange.end
+            }
+            : null,
+          userFilter: this.filters.users.enabled
+            ? this.filters.users.selected
+            : null,
+          keywords: this.filters.keywords.enabled
+            ? this.filters.keywords.selected
+            : null,
           posts: posts.map((post) => post.id) // Store post IDs
         };
 

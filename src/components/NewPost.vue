@@ -40,6 +40,23 @@ export default {
   },
 
   methods: {
+    async fetchUserEmail(uid) {
+      try {
+        const userDoc = await getDoc(doc(firestore, "users", uid));
+        if (userDoc.exists()) {
+          return userDoc.data().email; // Return the user's email
+        }
+        else {
+          console.error(`User with UID ${uid} not found.`);
+          return null;
+        }
+      }
+      catch (error) {
+        console.error("Error fetching user email:", error);
+        return null;
+      }
+    },
+
     async handlePost() {
       if (this.content.trim() === "") {
         alert("Post cannot be empty.");
@@ -54,7 +71,8 @@ export default {
       try {
         const postData = {
           timestamp: new Date(),
-          author: this.currentUser.email,
+          email: this.currentUser.email,
+          author: this.currentUser.uid,
           content: this.content
         };
 
