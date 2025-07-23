@@ -618,7 +618,7 @@ export default {
       });
     },
 
-    resetToFullRange() {
+    async resetToFullRange() {
       const now = new Date();
       const websiteLaunchDate = new Date("2025-07-10");
 
@@ -629,8 +629,47 @@ export default {
       this.dateRange.end = endDate.toISOString().split("T")[0];
 
       this.loadTimelineData();
+
+      await this.createFullTimelineArchive();
     },
 
+    async createFullTimelineArchive() {
+      if (!this.currentUser) {
+        alert("You must be logged in to create an archive.");
+        return;
+      }
+
+      try {
+        const allPosts = this.timelineData.sort(
+          (a, b) => b.timestamp.toDate() - a.timestamp.toDate()
+        );
+
+        const archiveData = {
+          name: `Full Timeline Archive`,
+          description: `Archive containing all ${allPosts.length} posts from ${this.formatDate(new Date(this.dateRange.start))} to ${this.formatDate(new Date(this.dateRange.end))}`,
+          creatorID: this.currentUser.uid,
+          creatorEmail: this.currentUser.email,
+          createdAt: new Date(),
+          postCount: allPosts.length,
+          dateRange: {
+            start: this.dateRange.start,
+            end: this.dateRange.end
+          },
+          posts: allPosts.map((post) => post.id)
+        };
+
+        await addDoc(collection(firestore, "archives"), archiveData);
+
+        alert(
+          `Full timeline archive created successfully with ${allPosts.length} posts!`
+        );
+      } 
+      catch (error) {
+        console.error("Error creating full timeline archive:", error);
+        alert("Failed to create full timeline archive. Please try again.");
+      }
+    },
+    
     formatDate(date) {
       return date.toLocaleDateString("en-US", {
         year: "numeric",

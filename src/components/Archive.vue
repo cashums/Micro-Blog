@@ -22,7 +22,9 @@
           <li v-for="post in archivePosts" :key="post.id">
             <div class="post-header">
               <strong>{{ post.authorEmail || "Unknown User" }}</strong>
-              <span class="post-time">{{ formatTime(post.timestamp) }}</span>
+              <span class="post-time">
+                {{ formatDate(post.timestamp) }} | {{ formatTime(post.timestamp) }}
+              </span>
             </div>
             <p class="post-content">
               {{ post.content || "No content available" }}
@@ -115,7 +117,7 @@ export default {
               if (userDoc.exists()) {
                 authorEmail = userDoc.data().email;
               }
-            }
+            } 
             catch (error) {
               console.error("Error fetching user data:", error);
             }
@@ -123,7 +125,10 @@ export default {
             return {
               id: postDoc.id,
               ...postData,
-              authorEmail
+              authorEmail,
+              timestamp: postData.timestamp?.toDate
+                ? postData.timestamp.toDate()
+                : new Date(postData.timestamp) // Ensure timestamp is converted
             };
           }
           return null;
@@ -133,12 +138,8 @@ export default {
         this.archivePosts = posts.filter((post) => post !== null);
 
         this.archivePosts.sort((a, b) => {
-          const timestampA = a.timestamp?.toDate
-            ? a.timestamp.toDate()
-            : new Date(a.timestamp);
-          const timestampB = b.timestamp?.toDate
-            ? b.timestamp.toDate()
-            : new Date(b.timestamp);
+          const timestampA = a.timestamp || new Date();
+          const timestampB = b.timestamp || new Date();
           return timestampB - timestampA;
         });
       }
@@ -331,7 +332,8 @@ export default {
         : new Date(timestamp);
       return date.toLocaleTimeString("en-US", {
         hour: "2-digit",
-        minute: "2-digit"
+        minute: "2-digit",
+        second: "2-digit"
       });
     }
   }
