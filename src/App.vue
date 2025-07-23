@@ -1,13 +1,6 @@
 <template>
   <div id="app">
     <header>
-      <img
-        alt="CapsLock logo"
-        class="logo"
-        src="@/assets/logo.png"
-        width="190"
-        height="125"
-      />
       <NavigationBar />
     </header>
     <main>

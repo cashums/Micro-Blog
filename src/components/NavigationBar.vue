@@ -1,6 +1,9 @@
 <template>
   <header>
     <nav>
+      <RouterLink to="/">
+        <img src="C:\Users\nukac\Documents\CS110\src\assets\logo.png" alt="CapsLock" class="logo" />
+      </RouterLink>
       <RouterLink to="/">Home</RouterLink>
       <RouterLink to="/archives" v-if="currentUser">Archives</RouterLink>
       <RouterLink to="/timeline">Timeline</RouterLink>
@@ -45,8 +48,24 @@ export default {
 <style scoped>
   nav {
     position: fixed;
-    left: 175px;
-    top: 50px;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 1000;
+    background-color: white;
+    border-bottom: 1px solid #ddd;
+    padding: 1rem 2rem;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+  }
+
+  .logo {
+    height: 50px;
+    width: auto;
+    margin: 0;
+    padding: 0;
   }
 
   nav a {
@@ -55,5 +74,9 @@ export default {
     font-weight: bold;
     font-style: italic;
     color: black;
+  }
+
+  nav a:hover {
+    text-decoration: underline;
   }
 </style>
