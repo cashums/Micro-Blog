@@ -128,26 +128,17 @@
     <!-- Selected Time Point Details -->
     <div v-if="selectedTimePoint" class="time-snapshot">
       <div class="snapshot-header">
+        <button style="float: right; background: red; color: white" @click="clearSelection" class="btn-close">×</button>
         <h3>📸 Snapshot: {{ formatDate(selectedTimePoint.date) }}</h3>
-        <button @click="clearSelection" class="btn-close">×</button>
       </div>
 
       <div class="snapshot-stats">
-        <div class="stat-card">
-          <h4>{{ selectedTimePoint.posts }}</h4>
-          <p>Posts</p>
-        </div>
-        <div class="stat-card">
-          <h4>{{ selectedTimePoint.users }}</h4>
-          <p>Active Users</p>
-        </div>
-        <div class="stat-card">
-          <h4>{{ selectedTimePoint.archives }}</h4>
-          <p>Archives Created</p>
-        </div>
+        <br>
+        <p>{{ selectedTimePoint.posts }} Posts</p>
+        <p>{{ selectedTimePoint.users }} Active Users</p>
+        <p>{{ selectedTimePoint.archives }} Archives Created</p>
       </div>
 
-      <!-- Sample Posts from that time -->
       <div class="snapshot-posts">
         <h4>Posts from this time:</h4>
         <div class="sample-posts">
@@ -165,12 +156,13 @@
         </div>
       </div>
 
-      <div class="snapshot-actions">
-        <button @click="createSnapshotArchive" class="btn-archive">
-          📦 Create Archive from this Snapshot
-        </button>
-        <button @click="viewFullData" class="btn-view">👁️ View All Data</button>
-      </div>
+
+      <button @click="createSnapshotArchive" class="btn-archive">
+        Create Archive from this Snapshot
+      </button>
+      <button @click="viewFullData" class="btn-view">
+        View All Data
+      </button>
     </div>
   </div>
 </template>
@@ -252,12 +244,10 @@ export default {
     async initializeTimeline() {
       this.loading = true;
 
-      // Set default date range (last 6 months to now)
       const now = new Date();
-      const sixMonthsAgo = new Date();
-      sixMonthsAgo.setMonth(now.getMonth() - 6);
+      const websiteLaunchDate = new Date("2025-07-01");
 
-      this.dateRange.start = sixMonthsAgo.toISOString().split("T")[0];
+      this.dateRange.start = websiteLaunchDate.toISOString().split("T")[0];
       this.dateRange.end = now.toISOString().split("T")[0];
 
       await this.loadTimelineData();
@@ -614,6 +604,74 @@ export default {
 </script>
 
 <style scoped>
+.btn-archive,
+.btn-view {
+  padding: 0.75rem 1.5rem;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-family: Courier, sans-serif;
+  font-weight: bold;
+  font-size: 1rem;
+  transition: all 0.2s ease-in-out;
+  transform: translateY(-2px);
+  background: #d7c2a2;
+  margin-right: 0.5rem;
+  margin-top: 2rem;
+}
+
+.snapshot-posts {
+  margin-top: 2rem;
+  background: #f8f9fa;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  padding: 1.5rem;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.snapshot-posts h4 {
+  margin-bottom: 1rem;
+  font-family: Helvetica, sans-serif;
+  font-weight: bold;
+  font-size: 1.5rem;
+  color: #333;
+}
+
+.sample-posts {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.sample-post {
+  background: white;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  padding: 1rem;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1);
+}
+
+.post-header {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 0.5rem;
+  font-size: 1rem;
+  font-weight: bold;
+  color: #333;
+}
+
+.post-time {
+  font-size: 0.9rem;
+  color: #666;
+}
+
+.post-content {
+  margin: 0;
+  font-size: 1rem;
+  line-height: 1.5;
+  color: #333;
+}
+
 .timeline-visualizer {
   width: 75vw;
   margin: 0;
@@ -633,9 +691,9 @@ export default {
   font-family: Helvetica, sans-serif;
   font-weight: bold;
   font-style: italic;
-  color: #333;
+  color: black;
   margin-bottom: 0.5rem;
-  font-size: 2.5rem; /* Make title larger */
+  font-size: 2.5rem;
 }
 
 .timeline-header p {
@@ -648,7 +706,7 @@ export default {
   display: flex;
   justify-content: center;
   align-items: center;
-  gap: 2rem; /* Increase gap */
+  gap: 2rem;
   flex-wrap: wrap;
   margin-bottom: 2rem;
 }
@@ -666,20 +724,26 @@ export default {
 }
 
 .date-input {
-  padding: 0.75rem; /* Increase padding */
+  padding: 0.75rem;
   border: 1px solid #ddd;
   border-radius: 4px;
   font-family: Courier, sans-serif;
-  min-width: 150px; /* Set minimum width */
+  min-width: 150px;
 }
 
 .btn-reset {
   background-color: #d7c2a2;
   color: black;
   border: none;
-  padding: 0.75rem 1.5rem; /* Increase padding */
+  padding: 0.75rem 1.5rem;
   border-radius: 4px;
   cursor: pointer;
+  font-family: Courier, sans-serif;
+  font-weight: bold;
+}
+
+.snapshot-stats {
+  color: black;
   font-family: Courier, sans-serif;
   font-weight: bold;
 }
@@ -690,7 +754,7 @@ export default {
 
 .timeline-container {
   margin-top: 2rem;
-  width: 100%; /* Make it span the full width */
+  width: 100%;
 }
 
 .loading-state {
@@ -700,19 +764,26 @@ export default {
   font-size: 1.2rem;
 }
 
+.snapshot-header {
+  font-family: Helvetica, sans-serif;
+  font-weight: bold;
+  font-style: italic;
+  color: black;
+}
+
 .timeline-main {
   display: flex;
   flex-direction: column;
-  gap: 3rem; /* Increase gap between sections */
+  gap: 3rem;
   width: 100%;
 }
 
 .timeline-scale {
   position: relative;
-  height: 60px; /* Increase height */
-  border-bottom: 3px solid #333; /* Make border thicker */
+  height: 60px;
+  border-bottom: 3px solid #333;
   margin-bottom: 2rem;
-  width: 100%; /* Make it span the full width */
+  width: 100%;
 }
 
 .time-marker {
@@ -721,14 +792,14 @@ export default {
 }
 
 .marker-line {
-  width: 3px; /* Make lines thicker */
-  height: 30px; /* Increase height */
+  width: 3px;
+  height: 30px;
   background-color: #333;
   margin-bottom: 8px;
 }
 
 .marker-label {
-  font-size: 0.9rem; /* Increase font size */
+  font-size: 0.9rem;
   color: #666;
   white-space: nowrap;
   font-weight: bold;
@@ -739,10 +810,10 @@ export default {
 .milestones {
   background: white;
   border: 1px solid #ddd;
-  border-radius: 12px; /* Increase border radius */
-  padding: 2rem; /* Increase padding */
-  width: 100%; /* Make it span the full width */
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1); /* Add shadow */
+  border-radius: 12px;
+  padding: 2rem;
+  width: 100%;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
 .activity-chart h3,
@@ -750,23 +821,23 @@ export default {
 .milestones h3 {
   margin: 0 0 1.5rem 0;
   color: #333;
-  font-size: 1.3rem; /* Increase font size */
+  font-size: 1.3rem;
   font-weight: bold;
 }
 
 .chart-container {
   position: relative;
-  height: 250px; /* Increase height */
+  height: 250px;
   border-bottom: 2px solid #ddd;
   border-left: 2px solid #ddd;
   border-radius: 4px;
-  width: 100%; /* Make it span the full width */
+  width: 100%;
 }
 
 .activity-bar {
   position: absolute;
   bottom: 0;
-  width: 4px; /* Make bars wider */
+  width: 4px;
   cursor: pointer;
   transition: all 0.2s;
   border-radius: 2px 2px 0 0;
@@ -791,13 +862,11 @@ export default {
   filter: drop-shadow(0 0 4px #007acc);
 }
 
-/* Optional: Add a class for enlarged data points and toggle it via Vue if you want dynamic radius change */
-
 .milestone-track {
   position: relative;
-  height: 80px; /* Increase height */
+  height: 80px;
   border-bottom: 3px solid #d7c2a2;
-  width: 100%; /* Make it span the full width */
+  width: 100%;
 }
 
 .milestone {
@@ -807,14 +876,14 @@ export default {
 }
 
 .milestone-marker {
-  width: 40px; /* Increase size */
+  width: 40px;
   height: 40px;
   background: #d7c2a2;
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 1.4rem; /* Increase font size */
+  font-size: 1.4rem;
   margin-bottom: 0.5rem;
   border: 3px solid #333;
   transition: all 0.2s;
@@ -827,12 +896,12 @@ export default {
 
 .milestone-tooltip {
   position: absolute;
-  bottom: 50px; /* Adjust position */
+  bottom: 50px;
   left: 50%;
   transform: translateX(-50%);
   background: #333;
   color: white;
-  padding: 0.75rem; /* Increase padding */
+  padding: 0.75rem;
   border-radius: 6px;
   font-size: 0.9rem;
   white-space: nowrap;
@@ -854,7 +923,7 @@ export default {
   border: 1px solid #ddd;
   border-radius: 12px;
   padding: 2rem;
-  width: 100%; /* Make it span the full width */
+  width: 100%;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 </style>
