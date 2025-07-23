@@ -6,9 +6,12 @@
     </div>
     <ul v-else>
       <li v-for="user in users" :key="user.id" class="user-entry">
-        <RouterLink :to="`/users/${user.id}`">{{ user.email.toUpperCase() }}</RouterLink>
+        <RouterLink :to="`/users/${user.id}`">{{
+          user.email.toUpperCase()
+        }}</RouterLink>
         <button
-          style="margin-left: 0.5rem" v-if="currentUser && !isAlreadyFollowing(user.id)"
+          style="margin-left: 0.5rem"
+          v-if="currentUser && !isAlreadyFollowing(user.id)"
           @click="follow(user)"
         >
           FOLLOW

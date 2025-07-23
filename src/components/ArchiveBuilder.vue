@@ -40,7 +40,8 @@
           </div>
 
           <div class="archive-details">
-            <p class="archive-description">{{ archive.description }}</p>
+            <p class="archive-description">{{ archive.description }}, {{ archive.creatorEmail }}</p>
+            <p class="archive-description"><strong>Created By:</strong> {{ archive.creatorEmail }}</p>
 
             <div class="archive-stats">
               <span class="stat">{{ archive.postCount }} posts</span>
@@ -76,7 +77,7 @@
           </div>
 
           <div class="archive-actions">
-            <button @click="viewArchive" class="btn-primary">
+            <button @click="viewArchive(archive.id)" class="btn-primary">
               View Archive
             </button>
             <button
@@ -267,12 +268,10 @@ export default {
       if (this.searchQuery) {
         filtered = filtered.filter(
           (archive) =>
-            archive.name
-              .toLowerCase()
-              .includes(this.searchQuery.toLowerCase()) ||
-              archive.description
-                .toLowerCase()
-                .includes(this.searchQuery.toLowerCase())
+            archive.name.toLowerCase().includes(this.searchQuery.toLowerCase()) ||
+            archive.description.toLowerCase().includes(this.searchQuery.toLowerCase()) ||
+            archive.creatorEmail.toLowerCase().includes(this.searchQuery.toLowerCase()) ||
+            archive.creatorID.toLowerCase().includes(this.searchQuery.toLowerCase())
         );
       }
 
@@ -283,7 +282,7 @@ export default {
         case "size":
           return b.postCount - a.postCount;
         case "date":
-        default:
+        default: {
           const dateA = a.createdAt?.toDate
             ? a.createdAt.toDate()
             : new Date(a.createdAt);
@@ -291,6 +290,7 @@ export default {
             ? b.createdAt.toDate()
             : new Date(b.createdAt);
           return dateB - dateA;
+        }
         }
       });
     }
@@ -316,11 +316,13 @@ export default {
       }
     },
 
-    viewArchive() {
-      this.$router.push({
-        name: "ArchiveView", // Ensure this matches the route name in your router configuration
-        query: { archiveId: this.selectedArchiveId }, // Pass any required query parameters
-      });
+    viewArchive(archiveId) {
+      if (!archiveId) {
+        alert("Archive ID is missing.");
+        return;
+      }
+
+      this.$router.push({ name: "archive", params: { id: archiveId } });
     },
 
     async createArchive() {
@@ -340,7 +342,8 @@ export default {
         const archiveData = {
           name: this.newArchive.name,
           description: this.newArchive.description || "",
-          createdBy: this.currentUser.uid,
+          creatorID: this.currentUser.uid,
+          creatorEmail: this.currentUser.email,
           createdAt: new Date(),
           postCount: posts.length,
           dateRange: this.filters.dateRange.enabled
@@ -376,6 +379,14 @@ export default {
         console.error("Error creating archive:", error);
         alert("Failed to create archive. Please try again.");
       }
+    },
+
+    async fetchArchives() {
+      const archivesSnapshot = await getDocs(collection(firestore, "archives"));
+      this.archives = archivesSnapshot.docs.map((doc) => ({
+        id: doc.id,
+        ...doc.data(),
+      }));
     },
 
     async fetchFilteredPosts() {
@@ -514,6 +525,7 @@ export default {
 
           <div style="margin: 30px 0; display: flex; justify-content: space-between; background: #f8f8f8; padding: 15px; border-radius: 8px;">
             <div>
+              <p style="margin: 5px 0;"><strong>Created By:</strong> ${archive.creatorEmail}</p>
               <p style="margin: 5px 0;"><strong>Created:</strong> ${this.formatDate(archive.createdAt)}</p>
               <p style="margin: 5px 0;"><strong>Total Posts:</strong> ${fullPosts.length}</p>
             </div>
@@ -641,7 +653,7 @@ export default {
 
         const archivesQuery = query(
           collection(firestore, "archives"),
-          where("createdBy", "==", this.currentUser.uid)
+          where("creatorID", "==", this.currentUser.uid)
         );
 
         const querySnapshot = await getDocs(archivesQuery);
@@ -699,18 +711,15 @@ export default {
       return `${start} - ${end}`;
     },
 
-    viewArchive(archive) {
-      this.$router.push(`/archives/${archive.id}`);
-    },
-
     async shareArchive(archive) {
       try {
         const shareUrl = `${window.location.origin}/archives/${archive.id}`;
+        const shareText = `Archive: ${archive.name}\nCreated By: ${archive.creatorEmail}Description: ${archive.description}`;
 
         if (navigator.share) {
           await navigator.share({
             title: `Archive: ${archive.name}`,
-            text: archive.description,
+            text: shareText,
             url: shareUrl
           });
         }
@@ -743,6 +752,12 @@ export default {
     height: calc(100vh - 100px);
     overflow-y: auto;
     z-index: 100;
+  }
+
+  .archive-details p {
+    font-size: 1rem;
+    color: #333;
+    margin-bottom: 0.5rem;
   }
 
   .archive-creator h2 {

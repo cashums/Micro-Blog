@@ -4,6 +4,7 @@ import UserProfileView from "../views/UserProfileView.vue";
 import LoginView from "../views/LoginView.vue";
 import TimelineView from "../views/TimelineView.vue";
 import ArchiveWizardView from "../views/ArchiveWizardView.vue";
+import ArchiveView from "../views/ArchiveView.vue";
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -32,6 +33,11 @@ const router = createRouter({
       path: "/archiveWizard",
       name: "archiveWizard",
       component: ArchiveWizardView
+    },
+    {
+      path: "/archive/:id",
+      name: "archive",
+      component: ArchiveView
     }
   ]
 });

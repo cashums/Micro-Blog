@@ -128,12 +128,18 @@
     <!-- Selected Time Point Details -->
     <div v-if="selectedTimePoint" class="time-snapshot">
       <div class="snapshot-header">
-        <button style="float: right; background: red; color: white" @click="clearSelection" class="btn-close">×</button>
+        <button
+          style="float: right; background: red; color: white"
+          @click="clearSelection"
+          class="btn-close"
+        >
+          ×
+        </button>
         <h3>📸 Snapshot: {{ formatDate(selectedTimePoint.date) }}</h3>
       </div>
 
       <div class="snapshot-stats">
-        <br>
+        <br />
         <p>{{ selectedTimePoint.posts }} Posts</p>
         <p>{{ selectedTimePoint.users }} Active Users</p>
         <p>{{ selectedTimePoint.archives }} Archives Created</p>
@@ -156,13 +162,10 @@
         </div>
       </div>
 
-
       <button @click="createSnapshotArchive" class="btn-archive">
         Create Archive from this Snapshot
       </button>
-      <button @click="viewFullData" class="btn-view">
-        View All Data
-      </button>
+      <button @click="viewFullData" class="btn-view">View All Data</button>
     </div>
   </div>
 </template>
@@ -482,7 +485,9 @@ export default {
       for (const post of dayPosts) {
         if (!userEmailCache[post.author]) {
           try {
-            const userDoc = await getDoc(doc(firestore, "users", post.author));
+            const userDoc = await getDoc(
+              doc(firestore, "users", post.author)
+            );
             userEmailCache[post.author] = userDoc.exists()
               ? userDoc.data().email
               : "Unknown User";
@@ -531,15 +536,17 @@ export default {
         );
 
         // Sort posts in descending order by timestamp
-        dayPosts = dayPosts.sort((a, b) => b.timestamp.toDate() - a.timestamp.toDate());
+        dayPosts = dayPosts.sort(
+          (a, b) => b.timestamp.toDate() - a.timestamp.toDate()
+        );
 
         const archiveData = {
           name: `Snapshot - ${this.formatDate(this.selectedTimePoint.date)}`,
           description: `Automated snapshot archive containing the ${dayPosts.length} posts from ${this.formatDate(this.selectedTimePoint.date)}`,
-          createdBy: this.currentUser.uid,
+          creatorID: this.currentUser.uid,
+          creatorEmail: this.currentUser.email,
           createdAt: new Date(),
           postCount: dayPosts.length,
-          type: "snapshot",
           snapshotDate: this.selectedTimePoint.date,
           posts: dayPosts.map((post) => post.id)
         };
@@ -606,326 +613,326 @@ export default {
 </script>
 
 <style scoped>
-.btn-archive,
-.btn-view {
-  padding: 0.75rem 1.5rem;
-  border: none;
-  border-radius: 6px;
-  cursor: pointer;
-  font-family: Courier, sans-serif;
-  font-weight: bold;
-  font-size: 1rem;
-  transition: all 0.2s ease-in-out;
-  transform: translateY(-2px);
-  background: #d7c2a2;
-  margin-right: 0.5rem;
-  margin-top: 2rem;
-}
+  .btn-archive,
+  .btn-view {
+    padding: 0.75rem 1.5rem;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-family: Courier, sans-serif;
+    font-weight: bold;
+    font-size: 1rem;
+    transition: all 0.2s ease-in-out;
+    transform: translateY(-2px);
+    background: #d7c2a2;
+    margin-right: 0.5rem;
+    margin-top: 2rem;
+  }
 
-.snapshot-posts {
-  margin-top: 2rem;
-  background: #f8f9fa;
-  border: 1px solid #ddd;
-  border-radius: 8px;
-  padding: 1.5rem;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-}
+  .snapshot-posts {
+    margin-top: 2rem;
+    background: #f8f9fa;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    padding: 1.5rem;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  }
 
-.snapshot-posts h4 {
-  margin-bottom: 1rem;
-  font-family: Helvetica, sans-serif;
-  font-weight: bold;
-  font-size: 1.5rem;
-  color: #333;
-}
+  .snapshot-posts h4 {
+    margin-bottom: 1rem;
+    font-family: Helvetica, sans-serif;
+    font-weight: bold;
+    font-size: 1.5rem;
+    color: #333;
+  }
 
-.sample-posts {
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
-}
+  .sample-posts {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+  }
 
-.sample-post {
-  background: white;
-  border: 1px solid #ddd;
-  border-radius: 6px;
-  padding: 1rem;
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1);
-}
+  .sample-post {
+    background: white;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    padding: 1rem;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1);
+  }
 
-.post-header {
-  display: flex;
-  justify-content: space-between;
-  margin-bottom: 0.5rem;
-  font-size: 1rem;
-  font-weight: bold;
-  color: #333;
-}
+  .post-header {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 0.5rem;
+    font-size: 1rem;
+    font-weight: bold;
+    color: #333;
+  }
 
-.post-time {
-  font-size: 0.9rem;
-  color: #666;
-}
+  .post-time {
+    font-size: 0.9rem;
+    color: #666;
+  }
 
-.post-content {
-  margin: 0;
-  font-size: 1rem;
-  line-height: 1.5;
-  color: #333;
-}
+  .post-content {
+    margin: 0;
+    font-size: 1rem;
+    line-height: 1.5;
+    color: #333;
+  }
 
-.timeline-visualizer {
-  width: 75vw;
-  margin: 0;
-  margin-top: 100px;
-  padding: 2rem;
-  font-family: Courier, sans-serif;
-  min-height: calc(100vh - 100px);
-}
+  .timeline-visualizer {
+    width: 75vw;
+    margin: 0;
+    margin-top: 100px;
+    padding: 2rem;
+    font-family: Courier, sans-serif;
+    min-height: calc(100vh - 100px);
+  }
 
-.timeline-header {
-  text-align: center;
-  margin-bottom: 3rem;
-  width: 100%;
-}
+  .timeline-header {
+    text-align: center;
+    margin-bottom: 3rem;
+    width: 100%;
+  }
 
-.timeline-header h1 {
-  font-family: Helvetica, sans-serif;
-  font-weight: bold;
-  font-style: italic;
-  color: black;
-  margin-bottom: 0.5rem;
-  font-size: 2.5rem;
-}
+  .timeline-header h1 {
+    font-family: Helvetica, sans-serif;
+    font-weight: bold;
+    font-style: italic;
+    color: black;
+    margin-bottom: 0.5rem;
+    font-size: 2.5rem;
+  }
 
-.timeline-header p {
-  color: #666;
-  margin-bottom: 2rem;
-  font-size: 1.1rem;
-}
+  .timeline-header p {
+    color: #666;
+    margin-bottom: 2rem;
+    font-size: 1.1rem;
+  }
 
-.date-controls {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  gap: 2rem;
-  flex-wrap: wrap;
-  margin-bottom: 2rem;
-}
+  .date-controls {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 2rem;
+    flex-wrap: wrap;
+    margin-bottom: 2rem;
+  }
 
-.date-input-group {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-}
+  .date-input-group {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
 
-.date-input-group label {
-  font-weight: bold;
-  color: #333;
-  min-width: 60px;
-}
+  .date-input-group label {
+    font-weight: bold;
+    color: #333;
+    min-width: 60px;
+  }
 
-.date-input {
-  padding: 0.75rem;
-  border: 1px solid #ddd;
-  border-radius: 4px;
-  font-family: Courier, sans-serif;
-  min-width: 150px;
-}
+  .date-input {
+    padding: 0.75rem;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-family: Courier, sans-serif;
+    min-width: 150px;
+  }
 
-.btn-reset {
-  background-color: #d7c2a2;
-  color: black;
-  border: none;
-  padding: 0.75rem 1.5rem;
-  border-radius: 4px;
-  cursor: pointer;
-  font-family: Courier, sans-serif;
-  font-weight: bold;
-}
+  .btn-reset {
+    background-color: #d7c2a2;
+    color: black;
+    border: none;
+    padding: 0.75rem 1.5rem;
+    border-radius: 4px;
+    cursor: pointer;
+    font-family: Courier, sans-serif;
+    font-weight: bold;
+  }
 
-.snapshot-stats {
-  color: black;
-  font-family: Courier, sans-serif;
-  font-weight: bold;
-}
+  .snapshot-stats {
+    color: black;
+    font-family: Courier, sans-serif;
+    font-weight: bold;
+  }
 
-.btn-reset:hover {
-  background-color: #c4b091;
-}
+  .btn-reset:hover {
+    background-color: #c4b091;
+  }
 
-.timeline-container {
-  margin-top: 2rem;
-  width: 100%;
-}
+  .timeline-container {
+    margin-top: 2rem;
+    width: 100%;
+  }
 
-.loading-state {
-  text-align: center;
-  padding: 3rem;
-  color: #666;
-  font-size: 1.2rem;
-}
+  .loading-state {
+    text-align: center;
+    padding: 3rem;
+    color: #666;
+    font-size: 1.2rem;
+  }
 
-.snapshot-header {
-  font-family: Helvetica, sans-serif;
-  font-weight: bold;
-  font-style: italic;
-  color: black;
-}
+  .snapshot-header {
+    font-family: Helvetica, sans-serif;
+    font-weight: bold;
+    font-style: italic;
+    color: black;
+  }
 
-.timeline-main {
-  display: flex;
-  flex-direction: column;
-  gap: 3rem;
-  width: 100%;
-}
+  .timeline-main {
+    display: flex;
+    flex-direction: column;
+    gap: 3rem;
+    width: 100%;
+  }
 
-.timeline-scale {
-  position: relative;
-  height: 60px;
-  border-bottom: 3px solid #333;
-  margin-bottom: 2rem;
-  width: 100%;
-}
+  .timeline-scale {
+    position: relative;
+    height: 60px;
+    border-bottom: 3px solid #333;
+    margin-bottom: 2rem;
+    width: 100%;
+  }
 
-.time-marker {
-  position: absolute;
-  transform: translateX(-50%);
-}
+  .time-marker {
+    position: absolute;
+    transform: translateX(-50%);
+  }
 
-.marker-line {
-  width: 3px;
-  height: 30px;
-  background-color: #333;
-  margin-bottom: 8px;
-}
+  .marker-line {
+    width: 3px;
+    height: 30px;
+    background-color: #333;
+    margin-bottom: 8px;
+  }
 
-.marker-label {
-  font-size: 0.9rem;
-  color: #666;
-  white-space: nowrap;
-  font-weight: bold;
-}
+  .marker-label {
+    font-size: 0.9rem;
+    color: #666;
+    white-space: nowrap;
+    font-weight: bold;
+  }
 
-.activity-chart,
-.growth-chart,
-.milestones {
-  background: white;
-  border: 1px solid #ddd;
-  border-radius: 12px;
-  padding: 2rem;
-  width: 100%;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-}
+  .activity-chart,
+  .growth-chart,
+  .milestones {
+    background: white;
+    border: 1px solid #ddd;
+    border-radius: 12px;
+    padding: 2rem;
+    width: 100%;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  }
 
-.activity-chart h3,
-.growth-chart h3,
-.milestones h3 {
-  margin: 0 0 1.5rem 0;
-  color: #333;
-  font-size: 1.3rem;
-  font-weight: bold;
-}
+  .activity-chart h3,
+  .growth-chart h3,
+  .milestones h3 {
+    margin: 0 0 1.5rem 0;
+    color: #333;
+    font-size: 1.3rem;
+    font-weight: bold;
+  }
 
-.chart-container {
-  position: relative;
-  height: 250px;
-  border-bottom: 2px solid #ddd;
-  border-left: 2px solid #ddd;
-  border-radius: 4px;
-  width: 100%;
-}
+  .chart-container {
+    position: relative;
+    height: 250px;
+    border-bottom: 2px solid #ddd;
+    border-left: 2px solid #ddd;
+    border-radius: 4px;
+    width: 100%;
+  }
 
-.activity-bar {
-  position: absolute;
-  bottom: 0;
-  width: 4px;
-  cursor: pointer;
-  transition: all 0.2s;
-  border-radius: 2px 2px 0 0;
-}
+  .activity-bar {
+    position: absolute;
+    bottom: 0;
+    width: 4px;
+    cursor: pointer;
+    transition: all 0.2s;
+    border-radius: 2px 2px 0 0;
+  }
 
-.activity-bar:hover {
-  opacity: 0.7;
-  transform: scaleY(1.1);
-}
+  .activity-bar:hover {
+    opacity: 0.7;
+    transform: scaleY(1.1);
+  }
 
-.growth-line {
-  width: 100%;
-  height: 100%;
-}
+  .growth-line {
+    width: 100%;
+    height: 100%;
+  }
 
-.data-point {
-  cursor: pointer;
-  transition: all 0.2s;
-}
+  .data-point {
+    cursor: pointer;
+    transition: all 0.2s;
+  }
 
-.data-point:hover {
-  filter: drop-shadow(0 0 4px #007acc);
-}
+  .data-point:hover {
+    filter: drop-shadow(0 0 4px #007acc);
+  }
 
-.milestone-track {
-  position: relative;
-  height: 80px;
-  border-bottom: 3px solid #d7c2a2;
-  width: 100%;
-}
+  .milestone-track {
+    position: relative;
+    height: 80px;
+    border-bottom: 3px solid #d7c2a2;
+    width: 100%;
+  }
 
-.milestone {
-  position: absolute;
-  transform: translateX(-50%);
-  cursor: pointer;
-}
+  .milestone {
+    position: absolute;
+    transform: translateX(-50%);
+    cursor: pointer;
+  }
 
-.milestone-marker {
-  width: 40px;
-  height: 40px;
-  background: #d7c2a2;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 1.4rem;
-  margin-bottom: 0.5rem;
-  border: 3px solid #333;
-  transition: all 0.2s;
-}
+  .milestone-marker {
+    width: 40px;
+    height: 40px;
+    background: #d7c2a2;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.4rem;
+    margin-bottom: 0.5rem;
+    border: 3px solid #333;
+    transition: all 0.2s;
+  }
 
-.milestone:hover .milestone-marker {
-  transform: scale(1.1);
-  background: #c4b091;
-}
+  .milestone:hover .milestone-marker {
+    transform: scale(1.1);
+    background: #c4b091;
+  }
 
-.milestone-tooltip {
-  position: absolute;
-  bottom: 50px;
-  left: 50%;
-  transform: translateX(-50%);
-  background: #333;
-  color: white;
-  padding: 0.75rem;
-  border-radius: 6px;
-  font-size: 0.9rem;
-  white-space: nowrap;
-  opacity: 0;
-  pointer-events: none;
-  transition: opacity 0.2s;
-  z-index: 100;
-  max-width: 250px;
-  white-space: normal;
-}
+  .milestone-tooltip {
+    position: absolute;
+    bottom: 50px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: #333;
+    color: white;
+    padding: 0.75rem;
+    border-radius: 6px;
+    font-size: 0.9rem;
+    white-space: nowrap;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.2s;
+    z-index: 100;
+    max-width: 250px;
+    white-space: normal;
+  }
 
-.milestone:hover .milestone-tooltip {
-  opacity: 1;
-}
+  .milestone:hover .milestone-tooltip {
+    opacity: 1;
+  }
 
-.time-snapshot {
-  margin-top: 3rem;
-  background: #f8f9fa;
-  border: 1px solid #ddd;
-  border-radius: 12px;
-  padding: 2rem;
-  width: 100%;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-}
+  .time-snapshot {
+    margin-top: 3rem;
+    background: #f8f9fa;
+    border: 1px solid #ddd;
+    border-radius: 12px;
+    padding: 2rem;
+    width: 100%;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  }
 </style>
