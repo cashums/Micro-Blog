@@ -3,6 +3,7 @@ import HomeView from "../views/HomeView.vue";
 import UserProfileView from "../views/UserProfileView.vue";
 import LoginView from "../views/LoginView.vue";
 import ArchiveView from "../views/ArchiveView.vue";
+import TimelineView from "../views/TimelineView.vue";
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -11,6 +12,11 @@ const router = createRouter({
       path: "/",
       name: "home",
       component: HomeView
+    },
+    {
+      path: "/timeline",
+      name: "timeline",
+      component: TimelineView
     },
     {
       path: "/users/:id",

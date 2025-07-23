@@ -241,14 +241,24 @@ export default {
 
   computed: {
     canGenerate() {
-      return this.newArchive.name.trim().length > 0 && this.activeFiltersCount > 0;
+      return (
+        this.newArchive.name.trim().length > 0 && this.activeFiltersCount > 0
+      );
     },
 
     activeFiltersCount() {
       let count = 0;
       if (this.filters.dateRange.enabled) count++;
-      if (this.filters.users.enabled && this.filters.users.selected.length > 0) count++;
-      if (this.filters.keywords.enabled && this.filters.keywords.selected.length > 0) count++;
+      if (
+        this.filters.users.enabled &&
+          this.filters.users.selected.length > 0
+      )
+        count++;
+      if (
+        this.filters.keywords.enabled &&
+          this.filters.keywords.selected.length > 0
+      )
+        count++;
       return count;
     },
 
@@ -275,8 +285,12 @@ export default {
           return b.postCount - a.postCount;
         case "date":
         default:
-          const dateA = a.createdAt?.toDate ? a.createdAt.toDate() : new Date(a.createdAt);
-          const dateB = b.createdAt?.toDate ? b.createdAt.toDate() : new Date(b.createdAt);
+          const dateA = a.createdAt?.toDate
+            ? a.createdAt.toDate()
+            : new Date(a.createdAt);
+          const dateB = b.createdAt?.toDate
+            ? b.createdAt.toDate()
+            : new Date(b.createdAt);
           return dateB - dateA;
         }
       });
@@ -453,22 +467,28 @@ export default {
                 // Fetch user email if we haven't cached it yet
                 if (postData.author && !userEmailCache[postData.author]) {
                   try {
-                    const userDoc = await getDoc(doc(firestore, "users", postData.author));
+                    const userDoc = await getDoc(
+                      doc(firestore, "users", postData.author)
+                    );
                     if (userDoc.exists()) {
                       userEmailCache[postData.author] = userDoc.data().email;
                     }
                     else {
-                      userEmailCache[postData.author] = 'Unknown User';
+                      userEmailCache[postData.author] = "Unknown User";
                     }
                   }
                   catch (userError) {
-                    console.error(`Error fetching user ${postData.author}:`, userError);
-                    userEmailCache[postData.author] = 'Unknown User';
+                    console.error(
+                      `Error fetching user ${postData.author}:`,
+                      userError
+                    );
+                    userEmailCache[postData.author] = "Unknown User";
                   }
                 }
 
                 // Add the email to the post data
-                postData.authorEmail = userEmailCache[postData.author] || 'Unknown User';
+                postData.authorEmail =
+                    userEmailCache[postData.author] || "Unknown User";
                 fullPosts.push(postData);
               }
             }
@@ -497,34 +517,46 @@ export default {
             </div>
           </div>
 
-          ${archive.description ? `
+          ${
+  archive.description
+    ? `
             <div style="margin: 20px 0; padding: 15px; background: #f0f7ff; border-left: 4px solid black; border-radius: 4px;">
               <h3 style="font-family: Helvetica, sans-serif; font-weight: bold; font-style: italic; margin: 0 0 10px 0; color: black;">Description</h3>
               <p style="margin: 0; line-height: 1.5;">${archive.description}</p>
             </div>
-          ` : ""}
+          `
+    : ""
+}
 
           <div style="margin: 30px 0;">
             <h2 style="font-family: Helvetica, sans-serif; font-weight: bold; font-style: italic; color: black; border-bottom: 2px solid black; padding-bottom: 10px; margin-bottom: 20px;">
               📝 Archived Posts (${fullPosts.length})
             </h2>
 
-            ${fullPosts.map(post => `
+            ${fullPosts
+    .map(
+      (post) => `
               <div style="border: 1px solid #ddd; margin: 20px 0; padding: 20px; border-radius: 8px; background: #d7c2a2; page-break-inside: avoid;">
                 <div style="color: black; display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; padding-bottom: 10px; border-bottom: 1px solid #eee;">
-                  <div style="color: black;">@${post.authorEmail || 'Unknown User'}</div>                  <div style="color: #666; font-size: 0.9em;">${this.formatDate(post.timestamp)} | ${this.formatTime(post.timestamp)}</div>
+                  <div style="color: black;">@${post.authorEmail || "Unknown User"}</div>                  <div style="color: #666; font-size: 0.9em;">${this.formatDate(post.timestamp)} | ${this.formatTime(post.timestamp)}</div>
                 </div>
                 <div style="color: black; font-weight: bold; line-height: 1.6; font-size: 1.1em;">
-                  ${post.content || 'No content available'}
+                  ${post.content || "No content available"}
                 </div>
               </div>
-            `).join("")}
+            `
+    )
+    .join("")}
 
-            ${fullPosts.length === 0 ? `
+            ${
+  fullPosts.length === 0
+    ? `
               <div style="text-align: center; padding: 40px; color: #666; font-style: italic; background: #d7c2a2; border-radius: 8px;">
                 <p style="margin: 0; font-size: 1.1em;">📭 No posts found in this archive</p>
               </div>
-            ` : ""}
+            `
+    : ""
+}
           </div>
 
           <div style="margin-top: 50px; padding-top: 20px; border-top: 2px solid black; text-align: center; color: #666; font-size: 0.9em;">
@@ -614,8 +646,12 @@ export default {
         }));
 
         this.archives.sort((a, b) => {
-          const dateA = a.createdAt?.toDate ? a.createdAt.toDate() : new Date(a.createdAt);
-          const dateB = b.createdAt?.toDate ? b.createdAt.toDate() : new Date(b.createdAt);
+          const dateA = a.createdAt?.toDate
+            ? a.createdAt.toDate()
+            : new Date(a.createdAt);
+          const dateB = b.createdAt?.toDate
+            ? b.createdAt.toDate()
+            : new Date(b.createdAt);
           return dateB - dateA;
         });
 

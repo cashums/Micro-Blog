@@ -2,7 +2,11 @@
   <header>
     <nav>
       <RouterLink to="/">
-        <img src="C:\Users\nukac\Documents\CS110\src\assets\logo.png" alt="CapsLock" class="logo" />
+        <img
+          src="C:\Users\nukac\Documents\CS110\src\assets\logo.png"
+          alt="CapsLock"
+          class="logo"
+        />
       </RouterLink>
       <RouterLink to="/">Home</RouterLink>
       <RouterLink to="/archives" v-if="currentUser">Archives</RouterLink>

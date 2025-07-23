@@ -1,0 +1,860 @@
+<template>
+  <div class="timeline-visualizer">
+    <!-- Timeline Header -->
+    <div class="timeline-header">
+      <h1>Platform Timeline</h1>
+      <p>Explore the evolution of CapsLock through time</p>
+
+      <!-- Date Range Selector -->
+      <div class="date-controls">
+        <div class="date-input-group">
+          <label>From:</label>
+          <input
+            type="date"
+            v-model="dateRange.start"
+            @change="loadTimelineData"
+            class="date-input"
+          />
+        </div>
+        <div class="date-input-group">
+          <label>To:</label>
+          <input
+            type="date"
+            v-model="dateRange.end"
+            @change="loadTimelineData"
+            class="date-input"
+          />
+        </div>
+        <button @click="resetToFullRange" class="btn-reset">
+          Full Timeline
+        </button>
+      </div>
+    </div>
+
+    <!-- Timeline Visualization -->
+    <div class="timeline-container">
+      <!-- Loading State -->
+      <div v-if="loading" class="loading-state">
+        <p>📊 Loading timeline data...</p>
+      </div>
+
+      <!-- Main Timeline -->
+      <div v-else class="timeline-main">
+        <!-- Timeline Scale -->
+        <div class="timeline-scale">
+          <div
+            v-for="(marker, index) in timeMarkers"
+            :key="index"
+            class="time-marker"
+            :style="{ left: marker.position + '%' }"
+          >
+            <div class="marker-line"></div>
+            <div class="marker-label">{{ marker.label }}</div>
+          </div>
+        </div>
+
+        <!-- Activity Chart -->
+        <div class="activity-chart">
+          <h3>Post Activity Over Time</h3>
+          <div class="chart-container">
+            <div
+              v-for="(bar, index) in activityBars"
+              :key="index"
+              class="activity-bar"
+              :style="{
+                height: bar.height + '%',
+                left: bar.position + '%',
+                backgroundColor: bar.color
+              }"
+              @click="selectTimePoint(bar.date)"
+              :title="`${bar.count} posts on ${formatDate(bar.date)}`"
+            ></div>
+          </div>
+        </div>
+
+        <!-- User Growth Chart -->
+        <div class="growth-chart">
+          <h3>User Growth</h3>
+          <div class="chart-container">
+            <svg
+              class="growth-line"
+              :viewBox="`0 0 ${chartWidth} ${chartHeight}`"
+            >
+              <polyline
+                :points="userGrowthPoints"
+                fill="none"
+                stroke="#007acc"
+                stroke-width="3"
+              ></polyline>
+              <!-- Data points -->
+              <circle
+                v-for="(point, index) in userGrowthData"
+                :key="index"
+                :cx="point.x"
+                :cy="point.y"
+                r="4"
+                fill="#007acc"
+                @click="selectTimePoint(point.date)"
+                :title="`${point.users} users on ${formatDate(point.date)}`"
+                class="data-point"
+              />
+            </svg>
+          </div>
+        </div>
+
+        <!-- Milestones -->
+        <div class="milestones">
+          <h3>Platform Milestones</h3>
+          <div class="milestone-track">
+            <div
+              v-for="milestone in milestones"
+              :key="milestone.id"
+              class="milestone"
+              :style="{ left: milestone.position + '%' }"
+              @click="selectMilestone(milestone)"
+            >
+              <div class="milestone-marker">{{ milestone.icon }}</div>
+              <div class="milestone-tooltip">
+                <strong>{{ milestone.title }}</strong>
+                <p>{{ milestone.description }}</p>
+                <small>{{ formatDate(milestone.date) }}</small>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Selected Time Point Details -->
+    <div v-if="selectedTimePoint" class="time-snapshot">
+      <div class="snapshot-header">
+        <h3>📸 Snapshot: {{ formatDate(selectedTimePoint.date) }}</h3>
+        <button @click="clearSelection" class="btn-close">×</button>
+      </div>
+
+      <div class="snapshot-stats">
+        <div class="stat-card">
+          <h4>{{ selectedTimePoint.posts }}</h4>
+          <p>Posts</p>
+        </div>
+        <div class="stat-card">
+          <h4>{{ selectedTimePoint.users }}</h4>
+          <p>Active Users</p>
+        </div>
+        <div class="stat-card">
+          <h4>{{ selectedTimePoint.archives }}</h4>
+          <p>Archives Created</p>
+        </div>
+      </div>
+
+      <!-- Sample Posts from that time -->
+      <div class="snapshot-posts">
+        <h4>Posts from this time:</h4>
+        <div class="sample-posts">
+          <div
+            v-for="post in selectedTimePoint.samplePosts"
+            :key="post.id"
+            class="sample-post"
+          >
+            <div class="post-header">
+              <strong>{{ post.authorEmail }}</strong>
+              <span class="post-time">{{ formatTime(post.timestamp) }}</span>
+            </div>
+            <p class="post-content">{{ post.content }}</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="snapshot-actions">
+        <button @click="createSnapshotArchive" class="btn-archive">
+          📦 Create Archive from this Snapshot
+        </button>
+        <button @click="viewFullData" class="btn-view">👁️ View All Data</button>
+      </div>
+    </div>
+  </div>
+</template>
+
+<script>
+import { firestore } from "@/firebaseResources.js";
+import { auth } from "@/firebaseResources.js";
+import { onAuthStateChanged } from "firebase/auth";
+import {
+  collection,
+  query,
+  where,
+  orderBy,
+  getDocs,
+  getDoc,
+  doc,
+  addDoc,
+  Timestamp
+} from "firebase/firestore";
+
+export default {
+  name: "TimelineVisualizer",
+
+  data() {
+    return {
+      currentUser: null,
+      loading: true,
+      dateRange: {
+        start: "",
+        end: ""
+      },
+      timelineData: [],
+      userGrowthData: [],
+      activityBars: [],
+      milestones: [],
+      selectedTimePoint: null,
+      chartWidth: 800,
+      chartHeight: 200,
+
+      // Computed timeline properties
+      timeMarkers: [],
+      userGrowthPoints: "",
+
+      // Sample milestones (you can make these dynamic)
+      platformMilestones: [
+        {
+          id: 1,
+          title: "Platform Launch",
+          description: "CapsLock social platform goes live!",
+          icon: "🚀",
+          type: "launch"
+        },
+        {
+          id: 2,
+          title: "First 100 Users",
+          description: "Reached our first milestone of 100 registered users",
+          icon: "👥",
+          type: "user_milestone"
+        },
+        {
+          id: 3,
+          title: "Archive Feature Launch",
+          description: "Digital preservation system launched",
+          icon: "📚",
+          type: "feature"
+        }
+      ]
+    };
+  },
+
+  mounted() {
+    onAuthStateChanged(auth, async (user) => {
+      this.currentUser = user;
+      await this.initializeTimeline();
+    });
+  },
+
+  methods: {
+    async initializeTimeline() {
+      this.loading = true;
+
+      // Set default date range (last 6 months to now)
+      const now = new Date();
+      const sixMonthsAgo = new Date();
+      sixMonthsAgo.setMonth(now.getMonth() - 6);
+
+      this.dateRange.start = sixMonthsAgo.toISOString().split("T")[0];
+      this.dateRange.end = now.toISOString().split("T")[0];
+
+      await this.loadTimelineData();
+      this.loading = false;
+    },
+
+    async loadTimelineData() {
+      try {
+        // Load posts data
+        await this.loadPostsData();
+
+        // Load user registration data
+        await this.loadUserData();
+
+        // Generate milestones
+        await this.generateMilestones();
+
+        // Process data for visualization
+        this.processTimelineData();
+      }
+      catch (error) {
+        console.error("Error loading timeline data:", error);
+      }
+    },
+
+    async loadPostsData() {
+      const startDate = new Date(this.dateRange.start);
+      const endDate = new Date(this.dateRange.end);
+      endDate.setHours(23, 59, 59, 999); // End of day
+
+      const postsQuery = query(
+        collection(firestore, "posts"),
+        where("timestamp", ">=", Timestamp.fromDate(startDate)),
+        where("timestamp", "<=", Timestamp.fromDate(endDate)),
+        orderBy("timestamp", "asc")
+      );
+
+      const querySnapshot = await getDocs(postsQuery);
+      this.timelineData = querySnapshot.docs.map((doc) => ({
+        id: doc.id,
+        ...doc.data(),
+        date: doc.data().timestamp.toDate()
+      }));
+    },
+
+    async loadUserData() {
+      // For user growth, we'll approximate based on post creation dates
+      // In a real system, you'd track user registration dates
+      const userRegistrations = {};
+
+      for (const post of this.timelineData) {
+        const dateKey = post.date.toDateString();
+        if (!userRegistrations[dateKey]) {
+          userRegistrations[dateKey] = new Set();
+        }
+        userRegistrations[dateKey].add(post.author);
+      }
+
+      this.userGrowthData = Object.entries(userRegistrations)
+        .map(([date, users]) => ({
+          date: new Date(date),
+          users: users.size,
+          totalUsers: 0 // Will be calculated below
+        }))
+        .sort((a, b) => a.date - b.date);
+
+      // Calculate cumulative user count
+      let totalUsers = 0;
+      this.userGrowthData.forEach((point) => {
+        totalUsers += point.users;
+        point.totalUsers = totalUsers;
+      });
+    },
+
+    async generateMilestones() {
+      this.milestones = [];
+
+      // Add platform milestones with calculated dates
+      for (const milestone of this.platformMilestones) {
+        let milestoneDate;
+
+        switch (milestone.type) {
+        case "launch":
+          // Use the date of the first post as launch date
+          milestoneDate =
+                this.timelineData.length > 0
+                  ? this.timelineData[0].date
+                  : new Date(this.dateRange.start);
+          break;
+
+        case "user_milestone": {
+          // Find when we hit 100 total users (approximate)
+          const userMilestonePoint = this.userGrowthData.find(
+            (point) => point.totalUsers >= 5
+          );
+          milestoneDate = userMilestonePoint
+            ? userMilestonePoint.date
+            : new Date(this.dateRange.start);
+          break;
+        }
+
+        case "feature": {
+          // Use a date in the middle of the timeline
+          const startTime = new Date(this.dateRange.start).getTime();
+          const endTime = new Date(this.dateRange.end).getTime();
+          milestoneDate = new Date(startTime + (endTime - startTime) * 0.7);
+          break;
+        }
+
+        default:
+          milestoneDate = new Date(this.dateRange.start);
+        }
+
+        this.milestones.push({
+          ...milestone,
+          date: milestoneDate,
+          position: this.calculateTimePosition(milestoneDate)
+        });
+      }
+    },
+
+    processTimelineData() {
+      this.generateTimeMarkers();
+      this.generateActivityBars();
+      this.generateUserGrowthChart();
+    },
+
+    generateTimeMarkers() {
+      const start = new Date(this.dateRange.start);
+      const end = new Date(this.dateRange.end);
+      const totalDays = (end - start) / (1000 * 60 * 60 * 24);
+
+      this.timeMarkers = [];
+
+      // Generate 5-7 evenly spaced markers
+      const markerCount = Math.min(
+        7,
+        Math.max(3, Math.floor(totalDays / 30))
+      );
+
+      for (let i = 0; i <= markerCount; i++) {
+        const position = (i / markerCount) * 100;
+        const date = new Date(
+          start.getTime() + (end - start) * (i / markerCount)
+        );
+
+        this.timeMarkers.push({
+          position,
+          label: this.formatDateShort(date),
+          date
+        });
+      }
+    },
+
+    generateActivityBars() {
+      // Group posts by day
+      const dailyActivity = {};
+
+      this.timelineData.forEach((post) => {
+        const dateKey = post.date.toDateString();
+        dailyActivity[dateKey] = (dailyActivity[dateKey] || 0) + 1;
+      });
+
+      const maxActivity = Math.max(...Object.values(dailyActivity), 1);
+
+      this.activityBars = Object.entries(dailyActivity).map(
+        ([dateStr, count]) => {
+          const date = new Date(dateStr);
+          return {
+            date,
+            count,
+            height: (count / maxActivity) * 100,
+            position: this.calculateTimePosition(date),
+            color: this.getActivityColor(count, maxActivity)
+          };
+        }
+      );
+    },
+
+    generateUserGrowthChart() {
+      if (this.userGrowthData.length === 0) return;
+
+      const maxUsers = Math.max(
+        ...this.userGrowthData.map((d) => d.totalUsers)
+      );
+
+      this.userGrowthData = this.userGrowthData.map((point) => ({
+        ...point,
+        x: this.calculateTimePosition(point.date) * (this.chartWidth / 100),
+        y:
+            this.chartHeight -
+            (point.totalUsers / maxUsers) * (this.chartHeight - 20)
+      }));
+
+      this.userGrowthPoints = this.userGrowthData
+        .map((point) => `${point.x},${point.y}`)
+        .join(" ");
+    },
+
+    calculateTimePosition(date) {
+      const start = new Date(this.dateRange.start).getTime();
+      const end = new Date(this.dateRange.end).getTime();
+      const current = date.getTime();
+
+      return ((current - start) / (end - start)) * 100;
+    },
+
+    getActivityColor(count, maxCount) {
+      const intensity = count / maxCount;
+      if (intensity > 0.8) return "#d73027";
+      if (intensity > 0.6) return "#fc8d59";
+      if (intensity > 0.4) return "#fee08b";
+      if (intensity > 0.2) return "#e0f3f8";
+      return "#abd9e9";
+    },
+
+    async selectTimePoint(date) {
+      // Get data for the selected date
+      const dayStart = new Date(date);
+      dayStart.setHours(0, 0, 0, 0);
+      const dayEnd = new Date(date);
+      dayEnd.setHours(23, 59, 59, 999);
+
+      const dayPosts = this.timelineData.filter(
+        (post) => post.date >= dayStart && post.date <= dayEnd
+      );
+
+      // Get user emails for the posts
+      const userEmailCache = {};
+      const samplePosts = [];
+
+      for (const post of dayPosts.slice(0, 5)) {
+        // Show max 5 sample posts
+        if (!userEmailCache[post.author]) {
+          try {
+            const userDoc = await getDoc(
+              doc(firestore, "users", post.author)
+            );
+            userEmailCache[post.author] = userDoc.exists()
+              ? userDoc.data().email
+              : "Unknown User";
+          }
+          catch {
+            userEmailCache[post.author] = "Unknown User";
+          }
+        }
+
+        samplePosts.push({
+          ...post,
+          authorEmail: userEmailCache[post.author]
+        });
+      }
+
+      this.selectedTimePoint = {
+        date,
+        posts: dayPosts.length,
+        users: new Set(dayPosts.map((p) => p.author)).size,
+        archives: 0, // Would need to query archives collection
+        samplePosts
+      };
+    },
+
+    selectMilestone(milestone) {
+      this.selectTimePoint(milestone.date);
+    },
+
+    clearSelection() {
+      this.selectedTimePoint = null;
+    },
+
+    async createSnapshotArchive() {
+      if (!this.selectedTimePoint || !this.currentUser) return;
+
+      try {
+        const dayStart = new Date(this.selectedTimePoint.date);
+        dayStart.setHours(0, 0, 0, 0);
+        const dayEnd = new Date(this.selectedTimePoint.date);
+        dayEnd.setHours(23, 59, 59, 999);
+
+        const dayPosts = this.timelineData.filter(
+          (post) => post.date >= dayStart && post.date <= dayEnd
+        );
+
+        const archiveData = {
+          name: `Snapshot - ${this.formatDate(this.selectedTimePoint.date)}`,
+          description: `Automated snapshot archive containing ${dayPosts.length} posts from ${this.formatDate(this.selectedTimePoint.date)}`,
+          createdBy: this.currentUser.uid,
+          createdAt: new Date(),
+          postCount: dayPosts.length,
+          type: "snapshot",
+          snapshotDate: this.selectedTimePoint.date,
+          posts: dayPosts.map((post) => post.id)
+        };
+
+        await addDoc(collection(firestore, "archives"), archiveData);
+
+        alert(
+          `Snapshot archive created successfully with ${dayPosts.length} posts!`
+        );
+      }
+      catch (error) {
+        console.error("Error creating snapshot archive:", error);
+        alert("Failed to create snapshot archive. Please try again.");
+      }
+    },
+
+    viewFullData() {
+      // Navigate to a detailed view or expand the current view
+      this.$router.push({
+        name: "HistoricalSearch",
+        query: {
+          date: this.selectedTimePoint.date.toISOString().split("T")[0]
+        }
+      });
+    },
+
+    resetToFullRange() {
+      const now = new Date();
+      const sixMonthsAgo = new Date();
+      sixMonthsAgo.setMonth(now.getMonth() - 6);
+
+      this.dateRange.start = sixMonthsAgo.toISOString().split("T")[0];
+      this.dateRange.end = now.toISOString().split("T")[0];
+
+      this.loadTimelineData();
+    },
+
+    formatDate(date) {
+      return date.toLocaleDateString("en-US", {
+        year: "numeric",
+        month: "long",
+        day: "numeric"
+      });
+    },
+
+    formatDateShort(date) {
+      return date.toLocaleDateString("en-US", {
+        month: "short",
+        day: "numeric"
+      });
+    },
+
+    formatTime(timestamp) {
+      const date = timestamp.toDate
+        ? timestamp.toDate()
+        : new Date(timestamp);
+      return date.toLocaleTimeString("en-US", {
+        hour: "2-digit",
+        minute: "2-digit"
+      });
+    }
+  }
+};
+</script>
+
+<style scoped>
+.timeline-visualizer {
+  width: 75vw;
+  margin: 0;
+  margin-top: 100px;
+  padding: 2rem;
+  font-family: Courier, sans-serif;
+  min-height: calc(100vh - 100px);
+}
+
+.timeline-header {
+  text-align: center;
+  margin-bottom: 3rem;
+  width: 100%;
+}
+
+.timeline-header h1 {
+  font-family: Helvetica, sans-serif;
+  font-weight: bold;
+  font-style: italic;
+  color: #333;
+  margin-bottom: 0.5rem;
+  font-size: 2.5rem; /* Make title larger */
+}
+
+.timeline-header p {
+  color: #666;
+  margin-bottom: 2rem;
+  font-size: 1.1rem;
+}
+
+.date-controls {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 2rem; /* Increase gap */
+  flex-wrap: wrap;
+  margin-bottom: 2rem;
+}
+
+.date-input-group {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.date-input-group label {
+  font-weight: bold;
+  color: #333;
+  min-width: 60px;
+}
+
+.date-input {
+  padding: 0.75rem; /* Increase padding */
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-family: Courier, sans-serif;
+  min-width: 150px; /* Set minimum width */
+}
+
+.btn-reset {
+  background-color: #d7c2a2;
+  color: black;
+  border: none;
+  padding: 0.75rem 1.5rem; /* Increase padding */
+  border-radius: 4px;
+  cursor: pointer;
+  font-family: Courier, sans-serif;
+  font-weight: bold;
+}
+
+.btn-reset:hover {
+  background-color: #c4b091;
+}
+
+.timeline-container {
+  margin-top: 2rem;
+  width: 100%; /* Make it span the full width */
+}
+
+.loading-state {
+  text-align: center;
+  padding: 3rem;
+  color: #666;
+  font-size: 1.2rem;
+}
+
+.timeline-main {
+  display: flex;
+  flex-direction: column;
+  gap: 3rem; /* Increase gap between sections */
+  width: 100%;
+}
+
+.timeline-scale {
+  position: relative;
+  height: 60px; /* Increase height */
+  border-bottom: 3px solid #333; /* Make border thicker */
+  margin-bottom: 2rem;
+  width: 100%; /* Make it span the full width */
+}
+
+.time-marker {
+  position: absolute;
+  transform: translateX(-50%);
+}
+
+.marker-line {
+  width: 3px; /* Make lines thicker */
+  height: 30px; /* Increase height */
+  background-color: #333;
+  margin-bottom: 8px;
+}
+
+.marker-label {
+  font-size: 0.9rem; /* Increase font size */
+  color: #666;
+  white-space: nowrap;
+  font-weight: bold;
+}
+
+.activity-chart,
+.growth-chart,
+.milestones {
+  background: white;
+  border: 1px solid #ddd;
+  border-radius: 12px; /* Increase border radius */
+  padding: 2rem; /* Increase padding */
+  width: 100%; /* Make it span the full width */
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1); /* Add shadow */
+}
+
+.activity-chart h3,
+.growth-chart h3,
+.milestones h3 {
+  margin: 0 0 1.5rem 0;
+  color: #333;
+  font-size: 1.3rem; /* Increase font size */
+  font-weight: bold;
+}
+
+.chart-container {
+  position: relative;
+  height: 250px; /* Increase height */
+  border-bottom: 2px solid #ddd;
+  border-left: 2px solid #ddd;
+  border-radius: 4px;
+  width: 100%; /* Make it span the full width */
+}
+
+.activity-bar {
+  position: absolute;
+  bottom: 0;
+  width: 4px; /* Make bars wider */
+  cursor: pointer;
+  transition: all 0.2s;
+  border-radius: 2px 2px 0 0;
+}
+
+.activity-bar:hover {
+  opacity: 0.7;
+  transform: scaleY(1.1);
+}
+
+.growth-line {
+  width: 100%;
+  height: 100%;
+}
+
+.data-point {
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.data-point:hover {
+  filter: drop-shadow(0 0 4px #007acc);
+}
+
+/* Optional: Add a class for enlarged data points and toggle it via Vue if you want dynamic radius change */
+
+.milestone-track {
+  position: relative;
+  height: 80px; /* Increase height */
+  border-bottom: 3px solid #d7c2a2;
+  width: 100%; /* Make it span the full width */
+}
+
+.milestone {
+  position: absolute;
+  transform: translateX(-50%);
+  cursor: pointer;
+}
+
+.milestone-marker {
+  width: 40px; /* Increase size */
+  height: 40px;
+  background: #d7c2a2;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.4rem; /* Increase font size */
+  margin-bottom: 0.5rem;
+  border: 3px solid #333;
+  transition: all 0.2s;
+}
+
+.milestone:hover .milestone-marker {
+  transform: scale(1.1);
+  background: #c4b091;
+}
+
+.milestone-tooltip {
+  position: absolute;
+  bottom: 50px; /* Adjust position */
+  left: 50%;
+  transform: translateX(-50%);
+  background: #333;
+  color: white;
+  padding: 0.75rem; /* Increase padding */
+  border-radius: 6px;
+  font-size: 0.9rem;
+  white-space: nowrap;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s;
+  z-index: 100;
+  max-width: 250px;
+  white-space: normal;
+}
+
+.milestone:hover .milestone-tooltip {
+  opacity: 1;
+}
+
+.time-snapshot {
+  margin-top: 3rem;
+  background: #f8f9fa;
+  border: 1px solid #ddd;
+  border-radius: 12px;
+  padding: 2rem;
+  width: 100%; /* Make it span the full width */
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+</style>
