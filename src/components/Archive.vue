@@ -23,7 +23,8 @@
             <div class="post-header">
               <strong>{{ post.authorEmail || "Unknown User" }}</strong>
               <span class="post-time">
-                {{ formatDate(post.timestamp) }} | {{ formatTime(post.timestamp) }}
+                {{ formatDate(post.timestamp) }} |
+                {{ formatTime(post.timestamp) }}
               </span>
             </div>
             <p class="post-content">
@@ -117,7 +118,7 @@ export default {
               if (userDoc.exists()) {
                 authorEmail = userDoc.data().email;
               }
-            } 
+            }
             catch (error) {
               console.error("Error fetching user data:", error);
             }

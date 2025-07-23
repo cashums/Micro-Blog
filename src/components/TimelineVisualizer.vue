@@ -663,13 +663,13 @@ export default {
         alert(
           `Full timeline archive created successfully with ${allPosts.length} posts!`
         );
-      } 
+      }
       catch (error) {
         console.error("Error creating full timeline archive:", error);
         alert("Failed to create full timeline archive. Please try again.");
       }
     },
-    
+
     formatDate(date) {
       return date.toLocaleDateString("en-US", {
         year: "numeric",
