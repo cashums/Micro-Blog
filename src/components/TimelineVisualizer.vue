@@ -40,19 +40,6 @@
 
       <!-- Main Timeline -->
       <div v-else class="timeline-main">
-        <!-- Timeline Scale -->
-        <div class="timeline-scale">
-          <div
-            v-for="(marker, index) in timeMarkers"
-            :key="index"
-            class="time-marker"
-            :style="{ left: marker.position + '%' }"
-          >
-            <div class="marker-line"></div>
-            <div class="marker-label">{{ marker.label }}</div>
-          </div>
-        </div>
-
         <!-- Activity Chart -->
         <div class="activity-chart">
           <h3>Post Activity Over Time</h3>
@@ -69,6 +56,18 @@
               @click="selectTimePoint(bar.date)"
               :title="`${bar.count} posts on ${formatDate(bar.date)}`"
             ></div>
+          </div>
+        </div>
+
+        <div class="timeline-scale">
+          <div
+            v-for="(marker, index) in timeMarkers"
+            :key="index"
+            class="time-marker"
+            :style="{ left: marker.position + '%' }"
+          >
+            <div class="marker-line"></div>
+            <div class="marker-label">{{ marker.label }}</div>
           </div>
         </div>
 
@@ -102,26 +101,18 @@
           </div>
         </div>
 
-        <!-- Milestones -->
-        <div class="milestones">
-          <h3>Platform Milestones</h3>
-          <div class="milestone-track">
-            <div
-              v-for="milestone in milestones"
-              :key="milestone.id"
-              class="milestone"
-              :style="{ left: milestone.position + '%' }"
-              @click="selectMilestone(milestone)"
-            >
-              <div class="milestone-marker">{{ milestone.icon }}</div>
-              <div class="milestone-tooltip">
-                <strong>{{ milestone.title }}</strong>
-                <p>{{ milestone.description }}</p>
-                <small>{{ formatDate(milestone.date) }}</small>
-              </div>
-            </div>
+        <div class="timeline-scale">
+          <div
+            v-for="(marker, index) in timeMarkers"
+            :key="index"
+            class="time-marker"
+            :style="{ left: marker.position + '%' }"
+          >
+            <div class="marker-line"></div>
+            <div class="marker-label">{{ marker.label }}</div>
           </div>
         </div>
+
       </div>
     </div>
 
@@ -791,20 +782,20 @@ export default {
     position: relative;
     height: 60px;
     border-bottom: 3px solid #333;
-    margin-bottom: 2rem;
+    margin-bottom: 4rem;
     width: 100%;
   }
 
   .time-marker {
     position: absolute;
-    transform: translateX(-50%);
+    transform: translateX(-30%);
   }
 
   .marker-line {
     width: 3px;
-    height: 30px;
+    height: 60px;
     background-color: #333;
-    margin-bottom: 8px;
+    margin-bottom: 10px;
   }
 
   .marker-label {
@@ -817,10 +808,8 @@ export default {
   .activity-chart,
   .growth-chart,
   .milestones {
-    background: white;
     border: 1px solid #ddd;
     border-radius: 12px;
-    padding: 2rem;
     width: 100%;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
   }
@@ -832,6 +821,8 @@ export default {
     color: #333;
     font-size: 1.3rem;
     font-weight: bold;
+    padding-left: 1rem;
+    padding-top: 1rem;
   }
 
   .chart-container {
@@ -869,61 +860,6 @@ export default {
 
   .data-point:hover {
     filter: drop-shadow(0 0 4px #007acc);
-  }
-
-  .milestone-track {
-    position: relative;
-    height: 80px;
-    border-bottom: 3px solid #d7c2a2;
-    width: 100%;
-  }
-
-  .milestone {
-    position: absolute;
-    transform: translateX(-50%);
-    cursor: pointer;
-  }
-
-  .milestone-marker {
-    width: 40px;
-    height: 40px;
-    background: #d7c2a2;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 1.4rem;
-    margin-bottom: 0.5rem;
-    border: 3px solid #333;
-    transition: all 0.2s;
-  }
-
-  .milestone:hover .milestone-marker {
-    transform: scale(1.1);
-    background: #c4b091;
-  }
-
-  .milestone-tooltip {
-    position: absolute;
-    bottom: 50px;
-    left: 50%;
-    transform: translateX(-50%);
-    background: #333;
-    color: white;
-    padding: 0.75rem;
-    border-radius: 6px;
-    font-size: 0.9rem;
-    white-space: nowrap;
-    opacity: 0;
-    pointer-events: none;
-    transition: opacity 0.2s;
-    z-index: 100;
-    max-width: 250px;
-    white-space: normal;
-  }
-
-  .milestone:hover .milestone-tooltip {
-    opacity: 1;
   }
 
   .time-snapshot {
