@@ -40,7 +40,6 @@ export default {
   methods: {
     async handleAuthAction() {
       if (this.currentUser) {
-        // Log out the user
         try {
           await signOut(auth);
           this.$router.push("/login");
@@ -50,7 +49,6 @@ export default {
         }
       } 
       else {
-        // Redirect to login page
         this.$router.push("/login");
       }
     },

@@ -77,11 +77,9 @@ export default {
     top: 0;
     left: 0;
     right: 0;
-    /* display: flex; */
     justify-content: space-between;
     align-items: center;
     padding: 0.5rem;
-    /* background-color: white; */
     z-index: 1000;
     height: 150px;
   }
