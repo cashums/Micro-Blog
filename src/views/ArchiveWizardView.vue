@@ -8,7 +8,7 @@
 import ArchiveBuilder from "@/components/ArchiveBuilder.vue";
 
 export default {
-  name: "ArchiveView",
+  name: "ArchiveWizardView",
 
   components: {
     ArchiveBuilder

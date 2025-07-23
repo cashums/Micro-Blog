@@ -21,7 +21,6 @@
         <select v-model="sortBy" class="sort-select">
           <option value="date">Sort by Date</option>
           <option value="name">Sort by Name</option>
-          <option value="size">Sort by Size</option>
         </select>
       </div>
     </div>
@@ -77,7 +76,7 @@
           </div>
 
           <div class="archive-actions">
-            <button @click="viewArchive(archive)" class="btn-primary">
+            <button @click="viewArchive" class="btn-primary">
               View Archive
             </button>
             <button
@@ -315,6 +314,13 @@ export default {
       if (!this.creatingArchive) {
         this.resetForm();
       }
+    },
+
+    viewArchive() {
+      this.$router.push({
+        name: "ArchiveView", // Ensure this matches the route name in your router configuration
+        query: { archiveId: this.selectedArchiveId }, // Pass any required query parameters
+      });
     },
 
     async createArchive() {

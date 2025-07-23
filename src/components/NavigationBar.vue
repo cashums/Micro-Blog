@@ -9,7 +9,7 @@
         />
       </RouterLink>
       <RouterLink to="/">HOME</RouterLink>
-      <RouterLink to="/archives" v-if="currentUser">ARCHIVES</RouterLink>
+      <RouterLink to="/archiveWizard" v-if="currentUser">ARCHIVES</RouterLink>
       <RouterLink to="/timeline">TIMELINE</RouterLink>
       <RouterLink to="/login">LOGIN</RouterLink>
     </nav>

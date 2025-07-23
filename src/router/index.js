@@ -2,8 +2,8 @@ import { createRouter, createWebHistory } from "vue-router";
 import HomeView from "../views/HomeView.vue";
 import UserProfileView from "../views/UserProfileView.vue";
 import LoginView from "../views/LoginView.vue";
-import ArchiveView from "../views/ArchiveView.vue";
 import TimelineView from "../views/TimelineView.vue";
+import ArchiveWizardView from "../views/ArchiveWizardView.vue";
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -29,9 +29,9 @@ const router = createRouter({
       component: LoginView
     },
     {
-      path: "/archives",
-      name: "archives",
-      component: ArchiveView
+      path: "/archiveWizard",
+      name: "archiveWizard",
+      component: ArchiveWizardView
     }
   ]
 });
