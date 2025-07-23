@@ -10,8 +10,8 @@
 </template>
 
 <script>
-import { auth } from '@/firebaseResources.js'
-import { signOut, onAuthStateChanged } from 'firebase/auth'
+import { auth } from "@/firebaseResources.js";
+import { signOut, onAuthStateChanged } from "firebase/auth";
 
 export default {
   name: "NavigationBar",
@@ -19,41 +19,41 @@ export default {
   data() {
     return {
       currentUser: null
-    }
+    };
   },
 
   mounted() {
     onAuthStateChanged(auth, (user) => {
-      this.currentUser = user
-    })
+      this.currentUser = user;
+    });
   },
 
   methods: {
     async logout() {
       try {
-        await signOut(auth)
-        this.$router.push("/login")
+        await signOut(auth);
+        this.$router.push("/login");
       }
       catch (error) {
-        console.error("Logout error: ", error)
+        console.error("Logout error: ", error);
       }
     }
   }
-}
+};
 </script>
 
 <style scoped>
-nav {
-  position: fixed;
-  left: 175px;
-  top: 50px;
-}
+  nav {
+    position: fixed;
+    left: 175px;
+    top: 50px;
+  }
 
-nav a {
-  margin-right: 1.5rem;
-  font-family: Helvetica, sans-serif;
-  font-weight: bold;
-  font-style: italic;
-  color: black;
-}
+  nav a {
+    margin-right: 1.5rem;
+    font-family: Helvetica, sans-serif;
+    font-weight: bold;
+    font-style: italic;
+    color: black;
+  }
 </style>

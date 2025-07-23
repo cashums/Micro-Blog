@@ -8,7 +8,5 @@
   "bracketSameLine": false,
   "arrowParens": "always",
   "vueIndentScriptAndStyle": true,
-  "endOfLine": "auto",
-  "breakBeforeElse": true,
-  "braceStyle": "stroustrup"
+  "endOfLine": "auto"
 }

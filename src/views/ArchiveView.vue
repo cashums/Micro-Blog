@@ -5,13 +5,13 @@
 </template>
 
 <script>
-import ArchiveBuilder from '@/components/ArchiveBuilder.vue'
+import ArchiveBuilder from "@/components/ArchiveBuilder.vue";
 
 export default {
-  name: 'ArchiveView',
+  name: "ArchiveView",
 
   components: {
     ArchiveBuilder
   }
-}
+};
 </script>

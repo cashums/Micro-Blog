@@ -48,7 +48,8 @@ export default defineConfig([
         {
           'allowSingleLine': true
         }
-      ]
+      ],
+      "indent": ["error", 2]
     }
   }
 ])
