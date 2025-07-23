@@ -479,13 +479,10 @@ export default {
       const userEmailCache = {};
       const samplePosts = [];
 
-      for (const post of dayPosts.slice(0, 5)) {
-        // Show max 5 sample posts
+      for (const post of dayPosts) {
         if (!userEmailCache[post.author]) {
           try {
-            const userDoc = await getDoc(
-              doc(firestore, "users", post.author)
-            );
+            const userDoc = await getDoc(doc(firestore, "users", post.author));
             userEmailCache[post.author] = userDoc.exists()
               ? userDoc.data().email
               : "Unknown User";
@@ -501,11 +498,13 @@ export default {
         });
       }
 
+      samplePosts.sort((a, b) => b.timestamp.toDate() - a.timestamp.toDate());
+
       this.selectedTimePoint = {
         date,
         posts: dayPosts.length,
         users: new Set(dayPosts.map((p) => p.author)).size,
-        archives: 0, // Would need to query archives collection
+        archives: 0, 
         samplePosts
       };
     },
