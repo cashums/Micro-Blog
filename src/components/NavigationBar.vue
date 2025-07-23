@@ -9,11 +9,9 @@
         />
       </RouterLink>
       <RouterLink to="/">HOME</RouterLink>
+      <RouterLink to="/login">PROFILE</RouterLink>
       <RouterLink to="/archiveWizard" v-if="currentUser">ARCHIVES</RouterLink>
       <RouterLink to="/timeline">TIMELINE</RouterLink>
-      <RouterLink @click="handleAuthAction">
-        {{ currentUser ? "LOG OUT" : "LOGIN" }}
-      </RouterLink>
     </nav>
   </header>
 </template>
@@ -38,21 +36,6 @@ export default {
   },
 
   methods: {
-    async handleAuthAction() {
-      if (this.currentUser) {
-        try {
-          await signOut(auth);
-          this.$router.push("/login");
-        } 
-        catch (error) {
-          console.error("Logout error: ", error);
-        }
-      } 
-      else {
-        this.$router.push("/login");
-      }
-    },
-
     async logout() {
       try {
         await signOut(auth);
