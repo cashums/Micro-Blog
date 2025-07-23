@@ -40,8 +40,12 @@
           </div>
 
           <div class="archive-details">
-            <p class="archive-description">{{ archive.description }}, {{ archive.creatorEmail }}</p>
-            <p class="archive-description"><strong>Created By:</strong> {{ archive.creatorEmail }}</p>
+            <p class="archive-description">
+              {{ archive.description }}, {{ archive.creatorEmail }}
+            </p>
+            <p class="archive-description">
+              <strong>Created By:</strong> {{ archive.creatorEmail }}
+            </p>
 
             <div class="archive-stats">
               <span class="stat">{{ archive.postCount }} posts</span>
@@ -268,10 +272,18 @@ export default {
       if (this.searchQuery) {
         filtered = filtered.filter(
           (archive) =>
-            archive.name.toLowerCase().includes(this.searchQuery.toLowerCase()) ||
-            archive.description.toLowerCase().includes(this.searchQuery.toLowerCase()) ||
-            archive.creatorEmail.toLowerCase().includes(this.searchQuery.toLowerCase()) ||
-            archive.creatorID.toLowerCase().includes(this.searchQuery.toLowerCase())
+            archive.name
+              .toLowerCase()
+              .includes(this.searchQuery.toLowerCase()) ||
+              archive.description
+                .toLowerCase()
+                .includes(this.searchQuery.toLowerCase()) ||
+              archive.creatorEmail
+                .toLowerCase()
+                .includes(this.searchQuery.toLowerCase()) ||
+              archive.creatorID
+                .toLowerCase()
+                .includes(this.searchQuery.toLowerCase())
         );
       }
 
@@ -382,10 +394,12 @@ export default {
     },
 
     async fetchArchives() {
-      const archivesSnapshot = await getDocs(collection(firestore, "archives"));
+      const archivesSnapshot = await getDocs(
+        collection(firestore, "archives")
+      );
       this.archives = archivesSnapshot.docs.map((doc) => ({
         id: doc.id,
-        ...doc.data(),
+        ...doc.data()
       }));
     },
 
@@ -998,13 +1012,13 @@ export default {
   }
 
   .btn-primary {
-    background-color: black;
-    color: white;
+    background-color: #d7c2a2;
+    color: black;
   }
 
   .btn-secondary {
-    background-color: #d7c2a2;
-    color: black;
+    background-color: black;
+    color: white;
   }
 
   .btn-tertiary {
