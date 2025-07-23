@@ -15,13 +15,13 @@ import { auth, firestore } from "@/firebaseResources.js";
 import { onAuthStateChanged } from "firebase/auth";
 import {
   doc,
-  getDoc,
   collection,
   query,
   orderBy,
   limit,
-  getDocs,
-  where
+  onSnapshot,
+  where,
+  getDocs
 } from "firebase/firestore";
 import PostItem from "./PostItem.vue";
 
@@ -43,87 +43,83 @@ export default {
     return {
       currentUser: null,
       posts: [],
-      loading: true
+      loading: true,
+      unsubscribe: null // To manage real-time listener
     };
   },
 
   mounted() {
     onAuthStateChanged(auth, async (user) => {
       this.currentUser = user;
-      await this.loadPosts();
+      this.setupRealTimeFeed();
     });
   },
 
   methods: {
-    async loadPosts() {
+    setupRealTimeFeed() {
+      if (this.unsubscribe) {
+        this.unsubscribe(); // Clean up previous listener
+      }
+
       this.loading = true;
 
-      try {
-        let posts = [];
-
-        if (this.userId) {
-          const userDoc = await getDoc(doc(firestore, "users", this.userId));
+      if (this.userId) {
+        const userDocRef = doc(firestore, "users", this.userId);
+        this.unsubscribe = onSnapshot(userDocRef, async (userDoc) => {
           const userPostIds = userDoc.data()?.posts || [];
-
           if (userPostIds.length > 0) {
             const postsQuery = query(
               collection(firestore, "posts"),
-              where("__name__", "in", userPostIds.slice(0, 10))
+              where("__name__", "in", userPostIds.slice(0, 10)),
+              orderBy("timestamp", "desc") // Ensure most recent posts are at the top
             );
             const querySnapshot = await getDocs(postsQuery);
-            posts = querySnapshot.docs.map((doc) => ({
+            this.posts = querySnapshot.docs.map((doc) => ({
               id: doc.id,
               ...doc.data()
             }));
           }
-        }
-        else if (this.currentUser) {
-          const userDoc = await getDoc(
-            doc(firestore, "users", this.currentUser.uid)
-          );
+          else {
+            this.posts = [];
+          }
+          this.loading = false;
+        });
+      }
+      else if (this.currentUser) {
+        const userDocRef = doc(firestore, "users", this.currentUser.uid);
+        this.unsubscribe = onSnapshot(userDocRef, async (userDoc) => {
           const feedPostIds = userDoc.data()?.feed || [];
-
           if (feedPostIds.length > 0) {
             const postsQuery = query(
               collection(firestore, "posts"),
-              where("__name__", "in", feedPostIds.slice(0, 10))
+              where("__name__", "in", feedPostIds.slice(0, 10)),
+              orderBy("timestamp", "desc") // Ensure most recent posts are at the top
             );
             const querySnapshot = await getDocs(postsQuery);
-            const allFeedPosts = querySnapshot.docs.map((doc) => ({
+            this.posts = querySnapshot.docs.map((doc) => ({
               id: doc.id,
               ...doc.data()
             }));
-
-            posts = allFeedPosts.filter(
-              (post) => post.author !== this.currentUser.email
-            );
           }
-        }
-        else {
-          const postsQuery = query(
-            collection(firestore, "posts"),
-            orderBy("timestamp", "desc"),
-            limit(10)
-          );
-          const querySnapshot = await getDocs(postsQuery);
-          posts = querySnapshot.docs.map((doc) => ({
+          else {
+            this.posts = [];
+          }
+          this.loading = false;
+        });
+      }
+      else {
+        const postsQuery = query(
+          collection(firestore, "posts"),
+          orderBy("timestamp", "desc"), // Already correct for general feed
+          limit(10)
+        );
+        this.unsubscribe = onSnapshot(postsQuery, (querySnapshot) => {
+          this.posts = querySnapshot.docs.map((doc) => ({
             id: doc.id,
             ...doc.data()
           }));
-        }
-
-        if (this.userId || this.currentUser) {
-          posts.sort((a, b) => b.timestamp.toDate() - a.timestamp.toDate());
-        }
-
-        this.posts = posts.slice(0, 10);
-      }
-      catch (error) {
-        console.error("Error loading posts:", error);
-        this.posts = [];
-      }
-      finally {
-        this.loading = false;
+          this.loading = false;
+        });
       }
     }
   },
@@ -131,13 +127,19 @@ export default {
   watch: {
     currentUser: {
       handler() {
-        this.loadPosts();
+        this.setupRealTimeFeed();
       }
     },
     userId: {
       handler() {
-        this.loadPosts();
+        this.setupRealTimeFeed();
       }
+    }
+  },
+
+  beforeUnmount() {
+    if (this.unsubscribe) {
+      this.unsubscribe(); // Clean up listener on component unmount
     }
   }
 };
