@@ -94,10 +94,28 @@
                 r="4"
                 fill="#007acc"
                 @click="selectTimePoint(point.date)"
-                :title="`${point.users} users on ${formatDate(point.date)}`"
+                @mouseenter="showUserTooltip($event, point)"
+                @mouseleave="hideUserTooltip"
                 class="data-point"
               />
             </svg>
+
+            <!-- Tooltip for user growth -->
+            <div
+              v-if="userTooltip.visible"
+              class="user-tooltip"
+              :style="{
+                left: userTooltip.x + 'px',
+                top: userTooltip.y + 'px'
+              }"
+            >
+              <div class="tooltip-content">
+                <strong>{{ formatDate(userTooltip.date) }}</strong>
+                <p>{{ userTooltip.totalUsers }} Total Users</p>
+                <p>{{ userTooltip.newUsers }} New Users</p>
+              </div>
+            </div>
+
           </div>
         </div>
 
@@ -196,6 +214,15 @@ export default {
       chartWidth: 800,
       chartHeight: 200,
 
+      userTooltip: {
+        visible: false,
+        x: 0,
+        y: 0,
+        date: null,
+        totalUsers: 0,
+        newUsers: 0
+      },
+
       // Computed timeline properties
       timeMarkers: [],
       userGrowthPoints: "",
@@ -235,6 +262,24 @@ export default {
   },
 
   methods: {
+    showUserTooltip(event, point) {
+      const rect = event.target.getBoundingClientRect();
+      const containerRect = event.target.closest('.chart-container').getBoundingClientRect();
+      
+      this.userTooltip = {
+        visible: true,
+        x: rect.left - containerRect.left + 10,
+        y: rect.top - containerRect.top - 60,
+        date: point.date,
+        totalUsers: point.totalUsers,
+        newUsers: point.users
+      };
+    },
+
+    hideUserTooltip() {
+      this.userTooltip.visible = false;
+    },
+
     async initializeTimeline() {
       this.loading = true;
 
@@ -620,6 +665,45 @@ export default {
     margin-top: 2rem;
   }
 
+  .user-tooltip {
+    position: absolute;
+    background: rgba(0, 0, 0, 0.9);
+    color: white;
+    padding: 0.75rem;
+    border-radius: 6px;
+    font-size: 0.85rem;
+    pointer-events: none;
+    z-index: 1000;
+    white-space: nowrap;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+    font-family: Courier, sans-serif;
+  }
+
+  .user-tooltip .tooltip-content {
+    text-align: left;
+  }
+
+  .user-tooltip .tooltip-content strong {
+    display: block;
+    margin-bottom: 0.25rem;
+    color: #007acc;
+  }
+
+  .user-tooltip .tooltip-content p {
+    margin: 0.1rem 0;
+    font-size: 0.8rem;
+  }
+
+  .data-point {
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .data-point:hover {
+    r: 6;
+    filter: drop-shadow(0 0 4px #007acc);
+  }
+
   .snapshot-posts {
     margin-top: 2rem;
     background: #f8f9fa;
@@ -832,6 +916,7 @@ export default {
     border-left: 2px solid #ddd;
     border-radius: 4px;
     width: 100%;
+    overflow: visible; /* Allow tooltip to show outside container */
   }
 
   .activity-bar {
