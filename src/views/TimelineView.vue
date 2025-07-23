@@ -20,7 +20,6 @@ export default {
   .timeline-view {
     width: 100%; /* Ensure it spans the full width */
     min-height: 100vh; /* Ensure it fills the viewport height */
-    background-color: #f5f5f5; /* Optional background color */
     display: flex;
     justify-content: center; /* Center the content horizontally */
     align-items: flex-start;
