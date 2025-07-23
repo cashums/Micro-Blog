@@ -9,9 +9,14 @@
       <p><strong>Post Count:</strong> {{ archive.postCount || 0 }}</p>
       <div class="posts">
         <h3>Posts in this Archive:</h3>
-        <ul>
-          <li v-for="post in archive.posts" :key="post.id">
-            {{ post.content || "No content available" }}
+        <div v-if="loadingPosts" class="loading-state">Loading posts...</div>
+        <ul v-else>
+          <li v-for="post in archivePosts" :key="post.id">
+            <div class="post-header">
+              <strong>{{ post.authorEmail || "Unknown User" }}</strong>
+              <span class="post-time">{{ formatTime(post.timestamp) }}</span>
+            </div>
+            <p class="post-content">{{ post.content || "No content available" }}</p>
           </li>
         </ul>
       </div>
@@ -34,11 +39,14 @@ export default {
   data() {
     return {
       archive: null,
+      archivePosts: [],
       loading: true,
+      loadingPosts: false,
     };
   },
   async mounted() {
     await this.loadArchive();
+    await this.loadArchivePosts();
   },
   methods: {
     async loadArchive() {
@@ -66,6 +74,60 @@ export default {
         this.loading = false;
       }
     },
+
+    async loadArchivePosts() {
+      if (!this.archive || !this.archive.posts || this.archive.posts.length === 0) {
+        return;
+      }
+
+      this.loadingPosts = true;
+
+      try {
+        // Fetch posts by their IDs
+        const postPromises = this.archive.posts.map(async (postId) => {
+          const postDoc = await getDoc(doc(firestore, "posts", postId));
+          if (postDoc.exists()) {
+            const postData = postDoc.data();
+            // Get user email for the post author
+            let authorEmail = "Unknown User";
+            try {
+              const userDoc = await getDoc(doc(firestore, "users", postData.author));
+              if (userDoc.exists()) {
+                authorEmail = userDoc.data().email;
+              }
+            }
+            catch (error) {
+              console.error("Error fetching user data:", error);
+            }
+
+            return {
+              id: postDoc.id,
+              ...postData,
+              authorEmail,
+            };
+          }
+          return null;
+        });
+
+        const posts = await Promise.all(postPromises);
+        this.archivePosts = posts.filter(post => post !== null);
+
+        // Sort posts by timestamp (newest first)
+        this.archivePosts.sort((a, b) => {
+          const timestampA = a.timestamp?.toDate ? a.timestamp.toDate() : new Date(a.timestamp);
+          const timestampB = b.timestamp?.toDate ? b.timestamp.toDate() : new Date(b.timestamp);
+          return timestampB - timestampA;
+        });
+      }
+      catch (error) {
+        console.error("Error fetching archive posts:", error);
+        alert("Failed to load archive posts.");
+      }
+      finally {
+        this.loadingPosts = false;
+      }
+    },
+
     formatDate(date) {
       if (!date || isNaN(new Date(date).getTime())) {
         return "Invalid Date";
@@ -76,12 +138,21 @@ export default {
         day: "numeric",
       });
     },
+
+    formatTime(timestamp) {
+      const date = timestamp?.toDate ? timestamp.toDate() : new Date(timestamp);
+      return date.toLocaleTimeString("en-US", {
+        hour: "2-digit",
+        minute: "2-digit",
+      });
+    },
   },
 };
 </script>
 
 <style scoped>
 .archive {
+  width: 75vw;
   padding: 2rem;
   font-family: Courier, sans-serif;
   background-color: #f8f9fa;
@@ -98,14 +169,16 @@ export default {
 
 h2 {
   font-size: 1.5rem;
+  font-family: Helvetica, sans-serif;
   font-weight: bold;
-  color: #007acc;
+  font-style: italic;
+  color: black;
   margin-bottom: 1rem;
 }
 
 p {
   font-size: 1rem;
-  color: #333;
+  color: black;
   margin-bottom: 1rem;
 }
 

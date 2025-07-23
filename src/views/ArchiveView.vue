@@ -1,6 +1,6 @@
 <template>
   <div class="archive-view">
-    <h1>📚 Archive Details</h1>
+    <h1>Archive Details</h1>
     <Archive :archiveId="$route.params.id" />
   </div>
 </template>
@@ -18,6 +18,7 @@ export default {
 
 <style scoped>
 .archive-view {
+  width: 75vm;
   max-width: 1200px;
   margin: 0 auto;
   margin-top: 100px;
@@ -31,8 +32,10 @@ export default {
 
 h1 {
   font-size: 2rem;
+  font-family: Helvetica, sans-serif;
   font-weight: bold;
-  color: #333;
+  font-style: italic;
+  color: black;
   text-align: center;
   margin-bottom: 2rem;
 }
