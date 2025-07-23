@@ -1,18 +1,18 @@
 <template>
   <div class="user-stats">
     <div v-if="user">
-      <div class="username">{{ user.email }}</div>
+      <div class="username">{{ user.email.toUpperCase() }}</div>
       <div class="stats-row">
         <div class="stat">
-          Posts <br />
+          POSTS <br />
           {{ user.posts?.length || 0 }}
         </div>
         <div class="stat">
-          Following <br />
+          FOLLOWING <br />
           {{ user.following?.length || 0 }}
         </div>
         <div class="stat">
-          Followers <br />
+          FOLLOWERS <br />
           {{ user.followers?.length || 0 }}
         </div>
       </div>

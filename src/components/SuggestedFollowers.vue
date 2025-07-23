@@ -1,17 +1,17 @@
 <template>
   <div class="suggested-followers">
-    <p class="title">Users to Follow</p>
+    <p class="title">USERS TO FOLLOW</p>
     <div class="placeholder-text" v-if="userCount < 1">
-      No one to follow right now.
+      NO ONE TO FOLLOW RIGHT NOW.
     </div>
     <ul v-else>
       <li v-for="user in users" :key="user.id" class="user-entry">
-        <RouterLink :to="`/users/${user.id}`">{{ user.email }}</RouterLink>
+        <RouterLink :to="`/users/${user.id}`">{{ user.email.toUpperCase() }}</RouterLink>
         <button
-          v-if="currentUser && !isAlreadyFollowing(user.id)"
+          style="margin-left: 0.5rem" v-if="currentUser && !isAlreadyFollowing(user.id)"
           @click="follow(user)"
         >
-          Follow
+          FOLLOW
         </button>
       </li>
     </ul>

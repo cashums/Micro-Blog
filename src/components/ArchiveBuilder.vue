@@ -937,6 +937,7 @@ export default {
 
   .stat {
     background-color: #e0e0e0;
+    color: black;
     padding: 0.25rem 0.5rem;
     border-radius: 4px;
     font-size: 0.8rem;
@@ -952,6 +953,7 @@ export default {
 
   .filter-tag {
     background-color: #d7c2a2;
+    color: black;
     padding: 0.25rem 0.5rem;
     border-radius: 4px;
     font-size: 0.8rem;

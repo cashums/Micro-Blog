@@ -1,7 +1,7 @@
 <template>
   <div class="post-item">
     <div class="post-details">
-      @{{ post.email }} on {{ formatDate(post.timestamp) }} at
+      @{{ post.email.toUpperCase() }} ON {{ formatDate(post.timestamp) }} AT
       {{ formatTime(post.timestamp) }}
     </div>
     <p>{{ post.content }}</p>

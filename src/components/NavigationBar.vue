@@ -8,10 +8,10 @@
           class="logo"
         />
       </RouterLink>
-      <RouterLink to="/">Home</RouterLink>
-      <RouterLink to="/archives" v-if="currentUser">Archives</RouterLink>
-      <RouterLink to="/timeline">Timeline</RouterLink>
-      <RouterLink to="/login">Login</RouterLink>
+      <RouterLink to="/">HOME</RouterLink>
+      <RouterLink to="/archives" v-if="currentUser">ARCHIVES</RouterLink>
+      <RouterLink to="/timeline">TIMELINE</RouterLink>
+      <RouterLink to="/login">LOGIN</RouterLink>
     </nav>
   </header>
 </template>

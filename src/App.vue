@@ -32,6 +32,7 @@ export default {
     padding: 0;
     margin: 0;
     box-sizing: border-box;
+    text-transform: uppercase;
   }
 
   .page-layout {
@@ -41,11 +42,6 @@ export default {
     grid-template-columns: 100px 100px 100px 100px 100px 100px 100px 100px 100px 100px;
     gap: 0.5rem;
   }
-
-  /* .post-input {
-  grid-row-start: 3;
-  grid-column-start: 1;
-} */
 
   .post-input {
     grid-row-start: 2;

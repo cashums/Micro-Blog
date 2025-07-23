@@ -504,7 +504,7 @@ export default {
         date,
         posts: dayPosts.length,
         users: new Set(dayPosts.map((p) => p.author)).size,
-        archives: 0, 
+        archives: 0,
         samplePosts
       };
     },
@@ -526,13 +526,16 @@ export default {
         const dayEnd = new Date(this.selectedTimePoint.date);
         dayEnd.setHours(23, 59, 59, 999);
 
-        const dayPosts = this.timelineData.filter(
+        let dayPosts = this.timelineData.filter(
           (post) => post.date >= dayStart && post.date <= dayEnd
         );
 
+        // Sort posts in descending order by timestamp
+        dayPosts = dayPosts.sort((a, b) => b.timestamp.toDate() - a.timestamp.toDate());
+
         const archiveData = {
           name: `Snapshot - ${this.formatDate(this.selectedTimePoint.date)}`,
-          description: `Automated snapshot archive containing ${dayPosts.length} posts from ${this.formatDate(this.selectedTimePoint.date)}`,
+          description: `Automated snapshot archive containing the ${dayPosts.length} posts from ${this.formatDate(this.selectedTimePoint.date)}`,
           createdBy: this.currentUser.uid,
           createdAt: new Date(),
           postCount: dayPosts.length,

@@ -1,9 +1,9 @@
 <template>
   <div v-if="currentUser" class="post-input">
-    <h3>Create a Post</h3>
+    <h3>CREATE A POST</h3>
     <textarea
       v-model="content"
-      placeholder="What's on your mind?"
+      placeholder="SHOUT IT OUT!"
       rows="3"
       class="post-textarea"
     ></textarea>
@@ -73,7 +73,7 @@ export default {
           timestamp: new Date(),
           email: this.currentUser.email,
           author: this.currentUser.uid,
-          content: this.content
+          content: this.content.toUpperCase()
         };
 
         const postRef = await addDoc(
