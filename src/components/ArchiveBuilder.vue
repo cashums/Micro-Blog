@@ -27,7 +27,6 @@
     </div>
 
     <div class="archives-container">
-      <!-- Archives Grid -->
       <div class="archives-grid" v-if="filteredArchives.length > 0">
         <div
           v-for="archive in filteredArchives"
@@ -100,7 +99,6 @@
         <p>No archives found. Create your first archive to get started!</p>
       </div>
 
-      <!-- Archive Creation Box -->
       <div v-if="creatingArchive" class="archive-creator">
         <h2>Create New Archive</h2>
         <div class="form-group">
@@ -122,7 +120,6 @@
         </div>
         <div class="form-group">
           <h3>Filters</h3>
-          <!-- Date Range Filter -->
           <div class="filter-group">
             <label>
               <input type="checkbox" v-model="filters.dateRange.enabled" />
@@ -135,7 +132,6 @@
             </div>
           </div>
 
-          <!-- User Filter -->
           <div class="filter-group">
             <label>
               <input type="checkbox" v-model="filters.users.enabled" />
@@ -164,7 +160,6 @@
             </div>
           </div>
 
-          <!-- Keyword Filter -->
           <div class="filter-group">
             <label>
               <input type="checkbox" v-model="filters.keywords.enabled" />
@@ -214,6 +209,8 @@ import {
   where,
   orderBy,
   getDocs,
+  getDoc,
+  doc,
   addDoc,
   limit
 } from "firebase/firestore";
@@ -229,7 +226,7 @@ export default {
       loading: true,
       searchQuery: "",
       sortBy: "date",
-      creatingArchive: false, // Toggle for archive creation box
+      creatingArchive: false,
       newArchive: {
         name: "",
         description: ""
@@ -258,7 +255,6 @@ export default {
     filteredArchives() {
       let filtered = this.archives;
 
-      // Search filter
       if (this.searchQuery) {
         filtered = filtered.filter(
           (archive) =>
@@ -271,7 +267,6 @@ export default {
         );
       }
 
-      // Sort
       return filtered.sort((a, b) => {
         switch (this.sortBy) {
         case "name":
@@ -291,7 +286,7 @@ export default {
   mounted() {
     onAuthStateChanged(auth, async (user) => {
       this.currentUser = user;
-      this.loading = true; // Set loading to true when auth changes
+      this.loading = true;
 
       if (user) {
         await this.loadArchives();
@@ -320,10 +315,8 @@ export default {
       }
 
       try {
-        // Fetch posts based on filters
         const posts = await this.fetchFilteredPosts();
 
-        // Prepare archive data
         const archiveData = {
           name: this.newArchive.name,
           description: this.newArchive.description || "",
@@ -342,17 +335,15 @@ export default {
           keywords: this.filters.keywords.enabled
             ? this.filters.keywords.selected
             : null,
-          posts: posts.map((post) => post.id) // Store post IDs
+          posts: posts.map((post) => post.id)
         };
 
-        // Save archive to Firestore
         const archiveRef = await addDoc(
           collection(firestore, "archives"),
           archiveData
         );
         console.log("Archive created successfully with ID:", archiveRef.id);
 
-        // Reset form and reload archives
         this.creatingArchive = false;
         this.resetForm();
         await this.loadArchives();
@@ -372,7 +363,6 @@ export default {
         let postsQuery = query(collection(firestore, "posts"));
         const constraints = [];
 
-        // Apply date range filter
         if (
           this.filters.dateRange.enabled &&
             this.filters.dateRange.start &&
@@ -384,7 +374,6 @@ export default {
           constraints.push(where("timestamp", "<=", endDate));
         }
 
-        // Apply user filter
         if (
           this.filters.users.enabled &&
             this.filters.users.selected.length > 0
@@ -394,7 +383,6 @@ export default {
           );
         }
 
-        // Apply constraints
         if (constraints.length > 0) {
           postsQuery = query(
             collection(firestore, "posts"),
@@ -416,7 +404,6 @@ export default {
           ...doc.data()
         }));
 
-        // Apply keyword filter (client-side)
         if (
           this.filters.keywords.enabled &&
             this.filters.keywords.selected.length > 0
@@ -449,19 +436,60 @@ export default {
 
     async downloadArchivePdf(event, archive) {
       try {
-        // Create a temporary HTML element for the PDF content
+        // Fetch full post data from Firestore using the stored post IDs
+        const fullPosts = [];
+        const userEmailCache = {}; // Cache to avoid duplicate user lookups
+
+        if (archive.posts && archive.posts.length > 0) {
+          for (const postId of archive.posts) {
+            try {
+              const postDoc = await getDoc(doc(firestore, "posts", postId));
+              if (postDoc.exists()) {
+                const postData = {
+                  id: postDoc.id,
+                  ...postDoc.data()
+                };
+
+                // Fetch user email if we haven't cached it yet
+                if (postData.author && !userEmailCache[postData.author]) {
+                  try {
+                    const userDoc = await getDoc(doc(firestore, "users", postData.author));
+                    if (userDoc.exists()) {
+                      userEmailCache[postData.author] = userDoc.data().email;
+                    }
+                    else {
+                      userEmailCache[postData.author] = 'Unknown User';
+                    }
+                  }
+                  catch (userError) {
+                    console.error(`Error fetching user ${postData.author}:`, userError);
+                    userEmailCache[postData.author] = 'Unknown User';
+                  }
+                }
+
+                // Add the email to the post data
+                postData.authorEmail = userEmailCache[postData.author] || 'Unknown User';
+                fullPosts.push(postData);
+              }
+            }
+            catch (error) {
+              console.error(`Error fetching post ${postId}:`, error);
+            }
+          }
+        }
+
         const element = document.createElement("div");
         element.innerHTML = `
-        <div style="font-family: Courier, sans-serif; padding: 20px; line-height: 1.6; color: #333;">
-          <div style="text-align: center; margin-bottom: 30px; border-bottom: 3px solid #333; padding-bottom: 20px;">
-            <h1 style="margin: 0; font-size: 2em; color: #333;">${archive.name}</h1>
+        <div style="font-family: Courier, sans-serif; padding: 20px; line-height: 1.6; color: black;">
+          <div style="text-align: center; margin-bottom: 30px; border-bottom: 3px solid black; padding-bottom: 20px;">
+            <h1 style="margin: 0; font-size: 2em; color: black;">${archive.name}</h1>
             <p style="margin: 10px 0 0 0; color: #666; font-style: italic;">Digital Archive Export</p>
           </div>
 
           <div style="margin: 30px 0; display: flex; justify-content: space-between; background: #f8f8f8; padding: 15px; border-radius: 8px;">
             <div>
               <p style="margin: 5px 0;"><strong>Created:</strong> ${this.formatDate(archive.createdAt)}</p>
-              <p style="margin: 5px 0;"><strong>Total Posts:</strong> ${archive.postCount || 0}</p>
+              <p style="margin: 5px 0;"><strong>Total Posts:</strong> ${fullPosts.length}</p>
             </div>
             <div>
               <p style="margin: 5px 0;"><strong>Generated:</strong> ${new Date().toLocaleDateString()}</p>
@@ -469,63 +497,37 @@ export default {
             </div>
           </div>
 
-          ${
-  archive.description
-    ? `
-            <div style="margin: 20px 0; padding: 15px; background: #f0f7ff; border-left: 4px solid #007acc; border-radius: 4px;">
-              <h3 style="margin: 0 0 10px 0; color: #007acc;">Description</h3>
+          ${archive.description ? `
+            <div style="margin: 20px 0; padding: 15px; background: #f0f7ff; border-left: 4px solid black; border-radius: 4px;">
+              <h3 style="font-family: Helvetica, sans-serif; font-weight: bold; font-style: italic; margin: 0 0 10px 0; color: black;">Description</h3>
               <p style="margin: 0; line-height: 1.5;">${archive.description}</p>
             </div>
-          `
-    : ""
-}
-
-          ${
-  this.hasFilters(archive)
-    ? `
-            <div style="margin: 20px 0; padding: 15px; background: #fff3cd; border-left: 4px solid #ffc107; border-radius: 4px;">
-              <h3 style="margin: 0 0 10px 0; color: #856404;">Applied Filters</h3>
-              ${archive.dateRange ? `<p style="margin: 5px 0;"><strong>📅 Date Range:</strong> ${this.formatDateRange(archive.dateRange)}</p>` : ""}
-              ${archive.keywords && archive.keywords.length > 0 ? `<p style="margin: 5px 0;"><strong>🔍 Keywords:</strong> ${archive.keywords.join(", ")}</p>` : ""}
-              ${archive.userFilter && archive.userFilter.length > 0 ? `<p style="margin: 5px 0;"><strong>👤 Users:</strong> ${archive.userFilter.join(", ")}</p>` : ""}
-            </div>
-          `
-    : ""
-}
+          ` : ""}
 
           <div style="margin: 30px 0;">
-            <h2 style="color: #333; border-bottom: 2px solid #333; padding-bottom: 10px; margin-bottom: 20px;">
-              📝 Archived Posts (${(archive.posts || []).length})
+            <h2 style="font-family: Helvetica, sans-serif; font-weight: bold; font-style: italic; color: black; border-bottom: 2px solid black; padding-bottom: 10px; margin-bottom: 20px;">
+              📝 Archived Posts (${fullPosts.length})
             </h2>
 
-            ${(archive.posts || [])
-    .map(
-      (post) => `
-              <div style="border: 1px solid #ddd; margin: 20px 0; padding: 20px; border-radius: 8px; background: #fafafa; page-break-inside: avoid;">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; padding-bottom: 10px; border-bottom: 1px solid #eee;">
-                  <div style="font-weight: bold; color: #007acc;">@${post.author}</div>
-                  <div style="color: #666; font-size: 0.9em;">${this.formatDate(post.timestamp)} • ${this.formatTime(post.timestamp)}</div>
+            ${fullPosts.map(post => `
+              <div style="border: 1px solid #ddd; margin: 20px 0; padding: 20px; border-radius: 8px; background: #d7c2a2; page-break-inside: avoid;">
+                <div style="color: black; display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; padding-bottom: 10px; border-bottom: 1px solid #eee;">
+                  <div style="color: black;">@${post.authorEmail || 'Unknown User'}</div>                  <div style="color: #666; font-size: 0.9em;">${this.formatDate(post.timestamp)} | ${this.formatTime(post.timestamp)}</div>
                 </div>
-                <div style="color: #333; line-height: 1.6; font-size: 1.1em;">
-                  ${post.content}
+                <div style="color: black; font-weight: bold; line-height: 1.6; font-size: 1.1em;">
+                  ${post.content || 'No content available'}
                 </div>
               </div>
-            `
-    )
-    .join("")}
+            `).join("")}
 
-            ${
-  !archive.posts || archive.posts.length === 0
-    ? `
-              <div style="text-align: center; padding: 40px; color: #666; font-style: italic; background: #f8f8f8; border-radius: 8px;">
+            ${fullPosts.length === 0 ? `
+              <div style="text-align: center; padding: 40px; color: #666; font-style: italic; background: #d7c2a2; border-radius: 8px;">
                 <p style="margin: 0; font-size: 1.1em;">📭 No posts found in this archive</p>
               </div>
-            `
-    : ""
-}
+            ` : ""}
           </div>
 
-          <div style="margin-top: 50px; padding-top: 20px; border-top: 2px solid #333; text-align: center; color: #666; font-size: 0.9em;">
+          <div style="margin-top: 50px; padding-top: 20px; border-top: 2px solid black; text-align: center; color: #666; font-size: 0.9em;">
             <p style="margin: 0;">This archive was generated from the CapsLock social platform</p>
             <p style="margin: 5px 0 0 0;">Preserved for posterity • ${new Date().getFullYear()}</p>
           </div>
@@ -533,17 +535,17 @@ export default {
       `;
 
         const options = {
-          margin: [0.7, 0.7, 0.7, 0.7], // top, left, bottom, right margins
+          margin: [0.7, 0.7, 0.7, 0.7],
           filename: `${archive.name.replace(/[^a-z0-9\s]/gi, "").replace(/\s+/g, "_")}_archive.pdf`,
           image: {
             type: "jpeg",
             quality: 0.95
           },
           html2canvas: {
-            scale: 2, // High resolution
-            useCORS: true, // Cross-origin images
-            letterRendering: true, // Better text
-            backgroundColor: "#ffffff" // White background
+            scale: 2,
+            useCORS: true,
+            letterRendering: true,
+            backgroundColor: "#ffffff"
           },
           jsPDF: {
             unit: "in",
@@ -551,20 +553,18 @@ export default {
             orientation: "portrait"
           },
           pagebreak: {
-            mode: ["avoid-all", "css"], // Avoid breaking elements
+            mode: ["avoid-all", "css"],
             before: ".page-break-before",
             after: ".page-break-after"
           }
         };
 
-        // Show loading indicator
         const originalText = event.target.textContent;
         event.target.textContent = "Generating PDF...";
         event.target.disabled = true;
 
         await html2pdf().set(options).from(element).save();
 
-        // Reset button
         event.target.textContent = originalText;
         event.target.disabled = false;
 
@@ -574,7 +574,6 @@ export default {
         console.error("Error downloading archive as PDF:", error);
         alert("Failed to download archive as PDF. Please try again.");
 
-        // Reset button on error
         if (event && event.target) {
           event.target.textContent = "Download";
           event.target.disabled = false;
@@ -582,7 +581,6 @@ export default {
       }
     },
 
-    // Add this helper method for time formatting
     formatTime(timestamp) {
       if (!timestamp) return "Unknown";
       const date = timestamp.toDate
@@ -590,41 +588,6 @@ export default {
         : new Date(timestamp);
       return date.toLocaleTimeString();
     },
-
-    // async loadArchives() {
-
-    //   console.log("loadArchives called");
-    //   console.log("Current user:", this.currentUser);
-
-    //   if (!this.currentUser) {
-    //     console.log("No current user, skipping archive load");
-    //     return;
-    //   }
-
-    //   try {
-    //     console.log("Loading archives for user:", this.currentUser.uid);
-
-    //     const archivesQuery = query(
-    //       collection(firestore, "archives"),
-    //       where("createdBy", "==", this.currentUser.uid),
-    //       orderBy("createdAt", "desc")
-    //     );
-
-    //     const querySnapshot = await getDocs(archivesQuery);
-
-    //     this.archives = querySnapshot.docs.map((doc) => ({
-    //       id: doc.id,
-    //       ...doc.data()
-    //     }));
-
-    //     console.log("Loaded archives:", this.archives);
-    //     console.log("Filtered archives:", this.filteredArchives);
-    //   }
-    //   catch (error) {
-    //     console.error("Error loading archives:", error);
-    //     this.archives = [];
-    //   }
-    // },
 
     async loadArchives() {
       console.log("loadArchives called");
@@ -638,7 +601,6 @@ export default {
       try {
         console.log("Loading archives for user:", this.currentUser.uid);
 
-        // Query all archives for this user and sort by creation date only
         const archivesQuery = query(
           collection(firestore, "archives"),
           where("createdBy", "==", this.currentUser.uid)
@@ -651,7 +613,6 @@ export default {
           ...doc.data()
         }));
 
-        // Sort client-side - this is more flexible anyway
         this.archives.sort((a, b) => {
           const dateA = a.createdAt?.toDate ? a.createdAt.toDate() : new Date(a.createdAt);
           const dateB = b.createdAt?.toDate ? b.createdAt.toDate() : new Date(b.createdAt);
@@ -705,7 +666,6 @@ export default {
         const shareUrl = `${window.location.origin}/archives/${archive.id}`;
 
         if (navigator.share) {
-          // Use native sharing if available
           await navigator.share({
             title: `Archive: ${archive.name}`,
             text: archive.description,
@@ -713,14 +673,12 @@ export default {
           });
         }
         else {
-          // Fallback: copy to clipboard
           await navigator.clipboard.writeText(shareUrl);
           alert("Archive link copied to clipboard!");
         }
       }
       catch (error) {
         console.error("Error sharing archive:", error);
-        // Fallback: show the URL
         prompt(
           "Copy this link to share the archive:",
           `${window.location.origin}/archives/${archive.id}`
@@ -734,14 +692,15 @@ export default {
 <style scoped>
   .archive-creator {
     position: absolute;
-    top: 0;
+    top: 100px;
     right: 0;
     width: 30%;
     background-color: #f8f9fa;
     padding: 1.5rem;
     border-left: 1px solid #ddd;
-    height: 100%;
+    height: calc(100vh - 100px);
     overflow-y: auto;
+    z-index: 100;
   }
 
   .archive-creator h2 {
@@ -749,7 +708,7 @@ export default {
     font-family: Helvetica, sans-serif;
     font-weight: bold;
     font-style: italic;
-    color: #333;
+    color: black;
   }
 
   .form-group {
@@ -833,9 +792,9 @@ export default {
   .archive-builder {
     max-width: 1200px;
     margin: 0 auto;
-    margin-top: 100px; /* Add space for the fixed navbar */
-    padding: 2rem; /* Add some padding for better spacing */
-    min-height: calc(100vh - 100px); /* Ensure full height minus navbar */
+    margin-top: 100px;
+    padding: 2rem;
+    min-height: calc(100vh - 100px);
   }
 
   .archive-header {
@@ -918,7 +877,7 @@ export default {
 
   .archive-card-header h3 {
     margin: 0;
-    color: #333;
+    color: black;
     font-family: Courier, sans-serif;
   }
 
@@ -980,7 +939,7 @@ export default {
   }
 
   .btn-primary {
-    background-color: #333;
+    background-color: black;
     color: white;
   }
 
@@ -991,8 +950,8 @@ export default {
 
   .btn-tertiary {
     background-color: transparent;
-    color: #333;
-    border: 1px solid #333;
+    color: black;
+    border: 1px solid black;
   }
 
   .btn-primary:hover,
