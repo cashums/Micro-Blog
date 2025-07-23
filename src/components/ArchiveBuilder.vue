@@ -41,7 +41,7 @@
 
           <div class="archive-details">
             <p class="archive-description">
-              {{ archive.description }}, {{ archive.creatorEmail }}
+              {{ archive.description }}
             </p>
             <p class="archive-description">
               <strong>Created By:</strong> {{ archive.creatorEmail }}
@@ -215,8 +215,7 @@ import {
   getDocs,
   getDoc,
   doc,
-  addDoc,
-  limit
+  addDoc
 } from "firebase/firestore";
 import html2pdf from "html2pdf.js";
 
@@ -321,6 +320,36 @@ export default {
   },
 
   methods: {
+    addUser() {
+      const email = this.filters.users.input.trim();
+      if (email && !this.filters.users.selected.includes(email)) {
+        this.filters.users.selected.push(email);
+        this.filters.users.input = "";
+      }
+    },
+
+    removeUser(email) {
+      const index = this.filters.users.selected.indexOf(email);
+      if (index > -1) {
+        this.filters.users.selected.splice(index, 1);
+      }
+    },
+
+    addKeyword() {
+      const keyword = this.filters.keywords.input.trim();
+      if (keyword && !this.filters.keywords.selected.includes(keyword)) {
+        this.filters.keywords.selected.push(keyword);
+        this.filters.keywords.input = "";
+      }
+    },
+
+    removeKeyword(keyword) {
+      const index = this.filters.keywords.selected.indexOf(keyword);
+      if (index > -1) {
+        this.filters.keywords.selected.splice(index, 1);
+      }
+    },
+
     toggleCreateArchive() {
       this.creatingArchive = !this.creatingArchive;
       if (!this.creatingArchive) {
@@ -349,7 +378,24 @@ export default {
       }
 
       try {
+        console.log("Starting archive creation...");
+        console.log("Filters:", this.filters);
+        console.log("Active filters count:", this.activeFiltersCount);
+        console.log("Can generate:", this.canGenerate);
+        console.log("Users selected:", this.filters.users.selected);
+        
+        // Fetch filtered posts
+        console.log("Fetching filtered posts...");
         const posts = await this.fetchFilteredPosts();
+        console.log("Posts fetched:", posts.length);
+        console.log("Sample posts:", posts.slice(0, 3)); // Show first 3 posts
+
+        if (posts.length === 0) {
+          alert("No posts match your filter criteria. Please adjust your filters and try again.");
+          return;
+        }
+
+        console.log("Creating archive data...");
 
         const archiveData = {
           name: this.newArchive.name,
@@ -378,6 +424,7 @@ export default {
           archiveData
         );
         console.log("Archive created successfully with ID:", archiveRef.id);
+        console.log("Saving to Firestore...");
 
         this.creatingArchive = false;
         this.resetForm();
@@ -388,9 +435,23 @@ export default {
         );
       }
       catch (error) {
-        console.error("Error creating archive:", error);
-        alert("Failed to create archive. Please try again.");
+        console.error("Detailed error creating archive:", error);
+        console.error("Error message:", error.message);
+        console.error("Error code:", error.code);
+        alert(`Failed to create archive: ${error.message}. Please try again.`);
       }
+    },
+
+    resetForm() {
+      this.newArchive = {
+        name: "",
+        description: ""
+      };
+      this.filters = {
+        dateRange: { enabled: false, start: "", end: "" },
+        users: { enabled: false, input: "", selected: [] },
+        keywords: { enabled: false, input: "", selected: [] }
+      };
     },
 
     async fetchArchives() {
@@ -405,54 +466,96 @@ export default {
 
     async fetchFilteredPosts() {
       try {
-        let postsQuery = query(collection(firestore, "posts"));
-        const constraints = [];
+        console.log("Building query with filters:", this.filters);
 
-        if (
-          this.filters.dateRange.enabled &&
-            this.filters.dateRange.start &&
-            this.filters.dateRange.end
-        ) {
-          const startDate = new Date(this.filters.dateRange.start);
-          const endDate = new Date(this.filters.dateRange.end);
-          constraints.push(where("timestamp", ">=", startDate));
-          constraints.push(where("timestamp", "<=", endDate));
-        }
+        let postsQuery;
 
+        // Handle the case where only user filter is enabled
         if (
           this.filters.users.enabled &&
-            this.filters.users.selected.length > 0
+          this.filters.users.selected.length === 1 &&
+          !this.filters.dateRange.enabled
         ) {
-          constraints.push(
-            where("author", "in", this.filters.users.selected)
-          );
-        }
-
-        if (constraints.length > 0) {
+          console.log("Using user-only filter");
           postsQuery = query(
             collection(firestore, "posts"),
-            ...constraints,
+            where("email", "==", this.filters.users.selected[0])
+          );
+        }
+        // Handle the case where only date range is enabled
+        else if (
+          this.filters.dateRange.enabled &&
+          this.filters.dateRange.start &&
+          this.filters.dateRange.end &&
+          !this.filters.users.enabled
+        ) {
+          console.log("Using date-only filter");
+          const startDate = new Date(this.filters.dateRange.start);
+          const endDate = new Date(this.filters.dateRange.end);
+          postsQuery = query(
+            collection(firestore, "posts"),
+            where("timestamp", ">=", startDate),
+            where("timestamp", "<=", endDate),
             orderBy("timestamp", "desc")
           );
         }
+        // Handle both date and user filters
+        else if (
+          this.filters.dateRange.enabled &&
+          this.filters.users.enabled &&
+          this.filters.dateRange.start &&
+          this.filters.dateRange.end &&
+          this.filters.users.selected.length > 0
+        ) {
+          console.log("Using combined date and user filters");
+          const startDate = new Date(this.filters.dateRange.start);
+          const endDate = new Date(this.filters.dateRange.end);
+
+          // First get posts by date range
+          const dateQuery = query(
+            collection(firestore, "posts"),
+            where("timestamp", ">=", startDate),
+            where("timestamp", "<=", endDate),
+            orderBy("timestamp", "desc")
+          );
+
+          const dateSnapshot = await getDocs(dateQuery);
+          let posts = dateSnapshot.docs.map((doc) => ({
+            id: doc.id,
+            ...doc.data()
+          }));
+
+          // Then filter by users client-side
+          posts = posts.filter((post) =>
+            this.filters.users.selected.includes(post.email)
+          );
+
+          return posts;
+        }
+        // Default case - get all posts
         else {
+          console.log("Using default query (all posts)");
           postsQuery = query(
             collection(firestore, "posts"),
-            orderBy("timestamp", "desc"),
-            limit(100)
+            orderBy("timestamp", "desc")
           );
         }
 
+        console.log("Executing query...");
         const querySnapshot = await getDocs(postsQuery);
         let posts = querySnapshot.docs.map((doc) => ({
           id: doc.id,
           ...doc.data()
         }));
 
+        console.log("Raw posts from query:", posts.length);
+
+        // Apply keyword filtering if enabled
         if (
           this.filters.keywords.enabled &&
-            this.filters.keywords.selected.length > 0
+          this.filters.keywords.selected.length > 0
         ) {
+          console.log("Applying keyword filter");
           posts = posts.filter((post) =>
             this.filters.keywords.selected.some((keyword) =>
               post.content.toLowerCase().includes(keyword.toLowerCase())
@@ -460,23 +563,13 @@ export default {
           );
         }
 
+        console.log("Final filtered posts:", posts.length);
         return posts;
-      }
+      } 
       catch (error) {
         console.error("Error fetching filtered posts:", error);
         return [];
       }
-    },
-
-    resetForm() {
-      this.newArchive = { name: "", description: "" };
-      this.filters = {
-        dateRange: { enabled: false, start: "", end: "" },
-        users: { enabled: false, input: "", selected: [] },
-        keywords: { enabled: false, input: "", selected: [] }
-      };
-      this.previewResults = [];
-      this.estimatedPosts = 0;
     },
 
     async downloadArchivePdf(event, archive) {
