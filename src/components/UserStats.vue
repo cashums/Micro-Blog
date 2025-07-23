@@ -27,7 +27,7 @@
 import { RouterLink } from "vue-router";
 import { auth, firestore } from "@/firebaseResources.js";
 import { onAuthStateChanged } from "firebase/auth";
-import { doc, getDoc } from "firebase/firestore";
+import { doc, onSnapshot } from "firebase/firestore";
 
 export default {
   name: "UserStats",
@@ -62,30 +62,44 @@ export default {
     async loadUserData() {
       try {
         if (this.userId) {
-          const userDoc = await getDoc(doc(firestore, "users", this.userId));
-          if (userDoc.exists()) {
-            this.user = {
-              id: userDoc.id,
-              ...userDoc.data()
-            };
-          }
-          else {
-            this.user = null;
-          }
+          this.unsubscribeUser = onSnapshot(
+            doc(firestore, "users", this.userId),
+            (userDoc) => {
+              if (userDoc.exists()) {
+                this.user = {
+                  id: userDoc.id,
+                  ...userDoc.data()
+                };
+              }
+              else {
+                this.user = null;
+              }
+            },
+            (error) => {
+              console.error("Error listening to user data:", error);
+              this.user = null;
+            }
+          );
         }
         else if (this.currentUser) {
-          const userDoc = await getDoc(
-            doc(firestore, "users", this.currentUser.uid)
+          this.unsubscribeUser = onSnapshot(
+            doc(firestore, "users", this.currentUser.uid),
+            (userDoc) => {
+              if (userDoc.exists()) {
+                this.user = {
+                  id: userDoc.id,
+                  ...userDoc.data()
+                };
+              }
+              else {
+                this.user = null;
+              }
+            },
+            (error) => {
+              console.error("Error listening to current user data:", error);
+              this.user = null;
+            }
           );
-          if (userDoc.exists()) {
-            this.user = {
-              id: userDoc.id,
-              ...userDoc.data()
-            };
-          }
-          else {
-            this.user = null;
-          }
         }
         else {
           this.user = null;
@@ -98,13 +112,19 @@ export default {
       finally {
         this.loading = false;
       }
-    }
-  },
+    },
 
-  watch: {
-    userId: {
-      handler() {
-        this.loadUserData();
+    beforeUnmount() {
+      if (this.unsubscribeUser) {
+        this.unsubscribeUser();
+      }
+    },
+
+    watch: {
+      userId: {
+        handler() {
+          this.loadUserData();
+        }
       }
     }
   }
