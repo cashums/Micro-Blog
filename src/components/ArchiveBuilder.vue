@@ -833,6 +833,9 @@ export default {
   .archive-builder {
     max-width: 1200px;
     margin: 0 auto;
+    margin-top: 100px; /* Add space for the fixed navbar */
+    padding: 2rem; /* Add some padding for better spacing */
+    min-height: calc(100vh - 100px); /* Ensure full height minus navbar */
   }
 
   .archive-header {
