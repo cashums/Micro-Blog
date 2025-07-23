@@ -2,15 +2,9 @@
   <div class="archive-builder">
     <div class="archive-header">
       <h1>My Archives</h1>
-      <div class="header-buttons">
-        <button @click="testPDF" class="btn-test">🧪 Test PDF</button>
-        <button @click="createNewArchive" class="btn-create">+ Create New Archive</button>
-      </div>
-    </div>
-
-    <div class="archive-header">
-      <h1>My Archives</h1>
-      <button @click="createNewArchive" class="btn-create">+ Create New Archive</button>
+      <button @click="toggleCreateArchive" class="btn-create">
+        {{ creatingArchive ? "Close Archive Creator" : "+ Create New Archive" }}
+      </button>
     </div>
 
     <div class="archive-controls">
@@ -32,56 +26,152 @@
       </div>
     </div>
 
-    <div class="archives-grid" v-if="filteredArchives.length > 0">
-      <div
-        v-for="archive in filteredArchives"
-        :key="archive.id"
-        class="archive-card"
-      >
-        <div class="archive-card-header">
-          <h3>{{ archive.name }}</h3>
-          <span class="archive-date">{{ formatDate(archive.createdAt) }}</span>
-        </div>
-
-        <div class="archive-details">
-          <p class="archive-description">{{ archive.description }}</p>
-
-          <div class="archive-stats">
-            <span class="stat">{{ archive.postCount }} posts</span>
-            <span class="stat" v-if="archive.userFilter">{{ archive.userFilter.length }} user(s)</span>
-            <span class="stat" v-if="archive.keywords">{{ archive.keywords.length }} keyword(s)</span>
+    <div class="archives-container">
+      <!-- Archives Grid -->
+      <div class="archives-grid" v-if="filteredArchives.length > 0">
+        <div
+          v-for="archive in filteredArchives"
+          :key="archive.id"
+          class="archive-card"
+        >
+          <div class="archive-card-header">
+            <h3>{{ archive.name }}</h3>
+            <span class="archive-date">{{ formatDate(archive.createdAt) }}</span>
           </div>
 
-          <div class="archive-filters" v-if="hasFilters(archive)">
-            <div class="filter-tags">
-              <span v-if="archive.dateRange" class="filter-tag">
-                {{ formatDateRange(archive.dateRange) }}
-              </span>
-              <span v-for="keyword in archive.keywords" :key="keyword" class="filter-tag">
-                {{ keyword }}
-              </span>
-              <span v-for="user in archive.userFilter" :key="user" class="filter-tag">
-                {{ user }}
-              </span>
+          <div class="archive-details">
+            <p class="archive-description">{{ archive.description }}</p>
+
+            <div class="archive-stats">
+              <span class="stat">{{ archive.postCount }} posts</span>
+              <span class="stat" v-if="archive.userFilter">{{ archive.userFilter.length }} user(s)</span>
+              <span class="stat" v-if="archive.keywords">{{ archive.keywords.length }} keyword(s)</span>
+            </div>
+
+            <div class="archive-filters" v-if="hasFilters(archive)">
+              <div class="filter-tags">
+                <span v-if="archive.dateRange" class="filter-tag">
+                  {{ formatDateRange(archive.dateRange) }}
+                </span>
+                <span v-for="keyword in archive.keywords" :key="keyword" class="filter-tag">
+                  {{ keyword }}
+                </span>
+                <span v-for="user in archive.userFilter" :key="user" class="filter-tag">
+                  {{ user }}
+                </span>
+              </div>
+            </div>
+          </div>
+
+          <div class="archive-actions">
+            <button @click="viewArchive(archive)" class="btn-primary">View Archive</button>
+            <button @click="downloadArchivePdf($event, archive)" class="btn-secondary">Download</button>
+            <button @click="shareArchive(archive)" class="btn-tertiary">Share</button>
+          </div>
+        </div>
+      </div>
+
+      <div v-else-if="loading" class="loading">
+        Loading archives...
+      </div>
+
+      <div v-else class="no-archives">
+        <p>No archives found. Create your first archive to get started!</p>
+      </div>
+
+      <!-- Archive Creation Box -->
+      <div v-if="creatingArchive" class="archive-creator">
+        <h2>Create New Archive</h2>
+        <div class="form-group">
+          <label>Archive Name:</label>
+          <input
+            type="text"
+            v-model="newArchive.name"
+            placeholder="Enter archive name..."
+            class="form-input"
+          />
+        </div>
+        <div class="form-group">
+          <label>Description:</label>
+          <textarea
+            v-model="newArchive.description"
+            placeholder="Describe this archive..."
+            class="form-textarea"
+          ></textarea>
+        </div>
+        <div class="form-group">
+          <h3>Filters</h3>
+          <!-- Date Range Filter -->
+          <div class="filter-group">
+            <label>
+              <input type="checkbox" v-model="filters.dateRange.enabled" />
+              Date Range
+            </label>
+            <div v-if="filters.dateRange.enabled" class="date-inputs">
+              <input type="date" v-model="filters.dateRange.start" />
+              <span>to</span>
+              <input type="date" v-model="filters.dateRange.end" />
+            </div>
+          </div>
+
+          <!-- User Filter -->
+          <div class="filter-group">
+            <label>
+              <input type="checkbox" v-model="filters.users.enabled" />
+              Specific Users
+            </label>
+            <div v-if="filters.users.enabled" class="user-filter">
+              <input
+                type="text"
+                v-model="filters.users.input"
+                @keyup.enter="addUser"
+                placeholder="Enter email and press Enter..."
+                class="form-input"
+              />
+              <div class="selected-users">
+                <span
+                  v-for="user in filters.users.selected"
+                  :key="user"
+                  class="user-tag"
+                >
+                  {{ user }}
+                  <button @click="removeUser(user)" class="remove-btn">×</button>
+                </span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Keyword Filter -->
+          <div class="filter-group">
+            <label>
+              <input type="checkbox" v-model="filters.keywords.enabled" />
+              Keywords
+            </label>
+            <div v-if="filters.keywords.enabled" class="keyword-filter">
+              <input
+                type="text"
+                v-model="filters.keywords.input"
+                @keyup.enter="addKeyword"
+                placeholder="Enter keyword and press Enter..."
+                class="form-input"
+              />
+              <div class="selected-keywords">
+                <span
+                  v-for="keyword in filters.keywords.selected"
+                  :key="keyword"
+                  class="keyword-tag"
+                >
+                  {{ keyword }}
+                  <button @click="removeKeyword(keyword)" class="remove-btn">×</button>
+                </span>
+              </div>
             </div>
           </div>
         </div>
-
-        <div class="archive-actions">
-          <button @click="viewArchive(archive)" class="btn-primary">View Archive</button>
-          <button @click="downloadArchivePdf($event, archive)" class="btn-secondary">Download</button>
-          <button @click="shareArchive(archive)" class="btn-tertiary">Share</button>
-        </div>
+        <button @click="createArchive" class="btn-generate" :disabled="!canGenerate">
+          Generate Archive
+        </button>
       </div>
-    </div>
-
-    <div v-else-if="loading" class="loading">
-      Loading archives...
-    </div>
-
-    <div v-else class="no-archives">
-      <p>No archives found. Create your first archive to get started!</p>
-      <button @click="createNewArchive" class="btn-create">Create Archive</button>
     </div>
   </div>
 </template>
@@ -89,7 +179,7 @@
 <script>
 import { auth, firestore } from '@/firebaseResources.js'
 import { onAuthStateChanged } from 'firebase/auth'
-import { collection, query, where, orderBy, getDocs } from 'firebase/firestore'
+import { collection, query, where, orderBy, getDocs, addDoc, limit } from 'firebase/firestore'
 import html2pdf from 'html2pdf.js'
 
 export default {
@@ -100,9 +190,19 @@ export default {
       currentUser: null,
       archives: [],
       loading: true,
-      searchQuery: '',
-      sortBy: 'date'
-    }
+      searchQuery: "",
+      sortBy: "date",
+      creatingArchive: false, // Toggle for archive creation box
+      newArchive: {
+        name: "",
+        description: "",
+      },
+      filters: {
+        dateRange: { enabled: false, start: "", end: "" },
+        users: { enabled: false, input: "", selected: [] },
+        keywords: { enabled: false, input: "", selected: [] },
+      },
+    };
   },
 
   computed: {
@@ -143,64 +243,117 @@ export default {
   },
 
   methods: {
-    // Add this test method
-    async testPDF() {
+    toggleCreateArchive() {
+      this.creatingArchive = !this.creatingArchive;
+      if (!this.creatingArchive) {
+        this.resetForm();
+      }
+    },
+
+    async createArchive() {
+      if (!this.currentUser) {
+        alert("You must be logged in to create an archive.")
+        return
+      }
+
+      if (!this.newArchive.name.trim()) {
+        alert("Archive name cannot be empty.")
+        return
+      }
+
       try {
-        // Create a simple test HTML element
-        const testElement = document.createElement('div')
-        testElement.innerHTML = `
-          <div style="font-family: Courier, sans-serif; padding: 20px; color: #333;">
-            <h1 style="color: black; text-align: center; border-bottom: 2px solid #007acc; padding-bottom: 10px;">
-              🧪 PDF Test Document
-            </h1>
+        // Fetch posts based on filters
+        const posts = await this.fetchFilteredPosts()
 
-            <div style="margin: 20px 0; padding: 15px; background: #f0f7ff; border-radius: 8px;">
-              <h2 style="color: black; margin-top: 0;">Test Information</h2>
-              <p><strong>Generated:</strong> ${new Date().toLocaleDateString()} at ${new Date().toLocaleTimeString()}</p>
-              <p><strong>User:</strong> ${this.currentUser?.email || 'Not logged in'}</p>
-              <p><strong>Browser:</strong> ${navigator.userAgent.split(' ')[0]}</p>
-            </div>
-
-            <div style="margin: 20px 0;">
-              <h3 style="color: #333;">Sample Content</h3>
-              <p style="line-height: 1.6;">This is a test PDF generated using html2pdf.js. The library converts HTML and CSS into a downloadable PDF file.</p>
-
-              <div style="background: #fff3cd; padding: 15px; border-radius: 5px; margin: 15px 0;">
-                <p style="margin: 0;"><strong>✅ Success!</strong> If you're reading this, html2pdf is working correctly.</p>
-              </div>
-
-              <ul style="line-height: 1.8;">
-                <li>HTML content ✓</li>
-                <li>CSS styling ✓</li>
-                <li>Colors and backgrounds ✓</li>
-                <li>Typography ✓</li>
-              </ul>
-            </div>
-
-            <div style="text-align: center; margin-top: 30px; padding-top: 20px; border-top: 1px solid #ccc; color: #666;">
-              <p>Generated by CapsLock Archive System</p>
-            </div>
-          </div>
-        `
-
-        // Simple PDF options
-        const options = {
-          margin: 1,
-          filename: `PDF_Test_${new Date().getTime()}.pdf`,
-          image: { type: 'jpeg', quality: 0.98 },
-          html2canvas: { scale: 2 },
-          jsPDF: { unit: 'in', format: 'letter', orientation: 'portrait' }
+        // Prepare archive data
+        const archiveData = {
+          name: this.newArchive.name,
+          description: this.newArchive.description || "",
+          createdBy: this.currentUser.uid,
+          createdAt: new Date(),
+          postCount: posts.length,
+          filters: {
+            dateRange: this.filters.dateRange.enabled ? {
+              start: this.filters.dateRange.start,
+              end: this.filters.dateRange.end
+            } : null,
+            userFilter: this.filters.users.enabled ? this.filters.users.selected : null,
+            keywords: this.filters.keywords.enabled ? this.filters.keywords.selected : null
+          },
+          posts: posts.map(post => post.id) // Store post IDs
         }
 
-        // Generate and download
-        console.log('Starting PDF test...')
-        await html2pdf().set(options).from(testElement).save()
-        console.log('✅ PDF test completed successfully!')
+        // Save archive to Firestore
+        const archiveRef = await addDoc(collection(firestore, "archives"), archiveData)
+        console.log("Archive created successfully with ID:", archiveRef.id)
+
+        // Reset form and reload archives
+        this.resetForm()
+        await this.loadArchives()
+
+        alert(`Archive "${this.newArchive.name}" created successfully with ${posts.length} posts!`)
       }
       catch (error) {
-        console.error('❌ PDF test failed:', error)
-        alert(`PDF test failed: ${error.message}`)
+        console.error("Error creating archive:", error)
+        alert("Failed to create archive. Please try again.")
       }
+    },
+
+    async fetchFilteredPosts() {
+      try {
+        let postsQuery = query(collection(firestore, "posts"))
+        const constraints = []
+
+        // Apply date range filter
+        if (this.filters.dateRange.enabled && this.filters.dateRange.start && this.filters.dateRange.end) {
+          const startDate = new Date(this.filters.dateRange.start)
+          const endDate = new Date(this.filters.dateRange.end)
+          constraints.push(where("timestamp", ">=", startDate))
+          constraints.push(where("timestamp", "<=", endDate))
+        }
+
+        // Apply user filter
+        if (this.filters.users.enabled && this.filters.users.selected.length > 0) {
+          constraints.push(where("author", "in", this.filters.users.selected))
+        }
+
+        // Apply constraints
+        if (constraints.length > 0) {
+          postsQuery = query(collection(firestore, "posts"), ...constraints, orderBy("timestamp", "desc"))
+        }
+        else {
+          postsQuery = query(collection(firestore, "posts"), orderBy("timestamp", "desc"), limit(100))
+        }
+
+        const querySnapshot = await getDocs(postsQuery)
+        let posts = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }))
+
+        // Apply keyword filter (client-side)
+        if (this.filters.keywords.enabled && this.filters.keywords.selected.length > 0) {
+          posts = posts.filter(post =>
+            this.filters.keywords.selected.some(keyword =>
+              post.content.toLowerCase().includes(keyword.toLowerCase())
+            )
+          )
+        }
+
+        return posts
+      }
+      catch (error) {
+        console.error("Error fetching filtered posts:", error)
+        return []
+      }
+    },
+
+    resetForm() {
+      this.newArchive = { name: "", description: "" }
+      this.filters = {
+        dateRange: { enabled: false, start: "", end: "" },
+        users: { enabled: false, input: "", selected: [] },
+        keywords: { enabled: false, input: "", selected: [] }
+      }
+      this.previewResults = []
+      this.estimatedPosts = 0
     },
 
     async downloadArchivePdf(event, archive) {
@@ -405,6 +558,83 @@ export default {
 </script>
 
 <style scoped>
+.archive-creator {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 30%;
+  background-color: #f8f9fa;
+  padding: 1.5rem;
+  border-left: 1px solid #ddd;
+  height: 100%;
+  overflow-y: auto;
+}
+
+.archive-creator h2 {
+  margin-top: 0;
+  font-family: Helvetica, sans-serif;
+  font-weight: bold;
+  font-style: italic;
+  color: #333;
+}
+
+.form-group {
+  margin-bottom: 1rem;
+}
+
+.form-input,
+.form-textarea {
+  width: 100%;
+  padding: 0.5rem;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+}
+
+.form-textarea {
+  height: 80px;
+  resize: vertical;
+}
+
+.filter-group {
+  margin-bottom: 1rem;
+}
+
+.date-inputs {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.user-tag,
+.keyword-tag {
+  background-color: #d7c2a2;
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.remove-btn {
+  background: none;
+  border: none;
+  color: #666;
+  cursor: pointer;
+}
+
+.btn-generate {
+  background-color: #007bff;
+  color: white;
+  border: none;
+  padding: 0.75rem 1.5rem;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.btn-generate:disabled {
+  background-color: #6c757d;
+  cursor: not-allowed;
+}
+
 .header-buttons {
   display: flex;
   gap: 0.5rem;
@@ -593,11 +823,16 @@ export default {
 .loading, .no-archives {
   text-align: center;
   padding: 3rem;
-  color: #666;
+  color: black;
   font-family: Courier, sans-serif;
 }
 
 .no-archives p {
   margin-bottom: 1rem;
+}
+
+label {
+  color: black;
+  font-family: Courier, sans-serif;
 }
 </style>
