@@ -44,18 +44,46 @@
         <div class="activity-chart">
           <h3>Post Activity Over Time</h3>
           <div class="chart-container">
+            <svg
+              class="activity-line"
+              :viewBox="`0 0 ${chartWidth} ${chartHeight}`"
+            >
+              <polyline
+                :points="activityPoints"
+                fill="none"
+                stroke="#d73027"
+                stroke-width="3"
+              ></polyline>
+              <!-- Data points -->
+              <circle
+                v-for="(point, index) in activityBars"
+                :key="index"
+                :cx="point.x"
+                :cy="point.y"
+                r="4"
+                fill="#d73027"
+                @click="selectTimePoint(point.date)"
+                @mouseenter="showActivityTooltip($event, point)"
+                @mouseleave="hideActivityTooltip"
+                class="data-point"
+              />
+            </svg>
+
+            <!-- Tooltip for activity -->
             <div
-              v-for="(bar, index) in activityBars"
-              :key="index"
-              class="activity-bar"
+              v-if="activityTooltip.visible"
+              class="activity-tooltip"
               :style="{
-                height: bar.height + '%',
-                left: bar.position + '%',
-                backgroundColor: bar.color
+                left: activityTooltip.x + 'px',
+                top: activityTooltip.y + 'px'
               }"
-              @click="selectTimePoint(bar.date)"
-              :title="`${bar.count} posts on ${formatDate(bar.date)}`"
-            ></div>
+            >
+              <div class="tooltip-content">
+                <strong>{{ formatDate(activityTooltip.date) }}</strong>
+                <p>{{ activityTooltip.count }} Total Posts</p>
+                <p>{{ activityTooltip.dailyCount }} Posts Today</p>
+              </div>
+            </div>
           </div>
         </div>
 
@@ -210,7 +238,6 @@ export default {
       timelineData: [],
       userGrowthData: [],
       activityBars: [],
-      milestones: [],
       selectedTimePoint: null,
       chartWidth: 800,
       chartHeight: 200,
@@ -224,34 +251,19 @@ export default {
         newUsers: 0
       },
 
+      activityTooltip: {
+        visible: false,
+        x: 0,
+        y: 0,
+        date: null,
+        count: 0
+      },
+
       // Computed timeline properties
       timeMarkers: [],
       userGrowthPoints: "",
+      activityPoints: "",
 
-      // Sample milestones (you can make these dynamic)
-      platformMilestones: [
-        {
-          id: 1,
-          title: "Platform Launch",
-          description: "CapsLock social platform goes live!",
-          icon: "🚀",
-          type: "launch"
-        },
-        {
-          id: 2,
-          title: "First 100 Users",
-          description: "Reached our first milestone of 100 registered users",
-          icon: "👥",
-          type: "user_milestone"
-        },
-        {
-          id: 3,
-          title: "Archive Feature Launch",
-          description: "Digital preservation system launched",
-          icon: "📚",
-          type: "feature"
-        }
-      ]
     };
   },
 
@@ -263,6 +275,71 @@ export default {
   },
 
   methods: {
+    generateActivityBars() {
+      // Group posts by day
+      const dailyActivity = {};
+
+      this.timelineData.forEach((post) => {
+        const dateKey = post.date.toDateString();
+        dailyActivity[dateKey] = (dailyActivity[dateKey] || 0) + 1;
+      });
+
+      // Convert to array and sort by date
+      const dailyActivityArray = Object.entries(dailyActivity)
+        .map(([dateStr, count]) => ({
+          date: new Date(dateStr),
+          dailyCount: count,
+          cumulativeCount: 0 // Will be calculated below
+        }))
+        .sort((a, b) => a.date - b.date);
+
+      // Calculate cumulative totals
+      let cumulativeTotal = 0;
+      dailyActivityArray.forEach((point) => {
+        cumulativeTotal += point.dailyCount;
+        point.cumulativeCount = cumulativeTotal;
+      });
+
+      const maxActivity = Math.max(...dailyActivityArray.map(d => d.cumulativeCount), 1);
+
+      this.activityBars = dailyActivityArray.map((point) => {
+        return {
+          date: point.date,
+          count: point.cumulativeCount, // Use cumulative count for display
+          dailyCount: point.dailyCount, // Keep daily count for tooltip
+          height: (point.cumulativeCount / maxActivity) * 100,
+          position: this.calculateTimePosition(point.date),
+          color: this.getActivityColor(point.cumulativeCount, maxActivity),
+          x: this.calculateTimePosition(point.date) * (this.chartWidth / 100),
+          y: this.chartHeight - (point.cumulativeCount / maxActivity) * (this.chartHeight - 20)
+        };
+      });
+
+      // Generate points string for polyline
+      this.activityPoints = this.activityBars
+        .map((point) => `${point.x},${point.y}`)
+        .join(" ");
+    },
+
+    showActivityTooltip(event, point) {
+      const rect = event.target.getBoundingClientRect();
+      const containerRect = event.target.closest('.chart-container').getBoundingClientRect();
+      
+      this.activityTooltip = {
+        visible: true,
+        x: rect.left - containerRect.left + 10,
+        y: rect.top - containerRect.top - 60,
+        date: point.date,
+        count: point.count, // Total posts up to this date
+        dailyCount: point.dailyCount // Posts on this specific day
+      };
+    },
+
+
+    hideActivityTooltip() {
+      this.activityTooltip.visible = false;
+    },
+
     showUserTooltip(event, point) {
       const rect = event.target.getBoundingClientRect();
       const containerRect = event.target.closest('.chart-container').getBoundingClientRect();
@@ -286,10 +363,12 @@ export default {
       this.loading = true;
 
       const now = new Date();
-      const websiteLaunchDate = new Date("2025-07-01");
+      const websiteLaunchDate = new Date("2025-07-10");
 
       this.dateRange.start = websiteLaunchDate.toISOString().split("T")[0];
-      this.dateRange.end = now.toISOString().split("T")[0];
+      const endDate = new Date(now);
+      endDate.setDate(endDate.getDate() + 1);
+      this.dateRange.end = endDate.toISOString().split("T")[0];
 
       await this.loadTimelineData();
       this.loading = false;
@@ -302,9 +381,6 @@ export default {
 
         // Load user registration data
         await this.loadUserData();
-
-        // Generate milestones
-        await this.generateMilestones();
 
         // Process data for visualization
         this.processTimelineData();
@@ -391,53 +467,6 @@ export default {
       });
     },
 
-    async generateMilestones() {
-      this.milestones = [];
-
-      // Add platform milestones with calculated dates
-      for (const milestone of this.platformMilestones) {
-        let milestoneDate;
-
-        switch (milestone.type) {
-        case "launch":
-          // Use the date of the first post as launch date
-          milestoneDate =
-                this.timelineData.length > 0
-                  ? this.timelineData[0].date
-                  : new Date(this.dateRange.start);
-          break;
-
-        case "user_milestone": {
-          // Find when we hit 100 total users (approximate)
-          const userMilestonePoint = this.userGrowthData.find(
-            (point) => point.totalUsers >= 5
-          );
-          milestoneDate = userMilestonePoint
-            ? userMilestonePoint.date
-            : new Date(this.dateRange.start);
-          break;
-        }
-
-        case "feature": {
-          // Use a date in the middle of the timeline
-          const startTime = new Date(this.dateRange.start).getTime();
-          const endTime = new Date(this.dateRange.end).getTime();
-          milestoneDate = new Date(startTime + (endTime - startTime) * 0.7);
-          break;
-        }
-
-        default:
-          milestoneDate = new Date(this.dateRange.start);
-        }
-
-        this.milestones.push({
-          ...milestone,
-          date: milestoneDate,
-          position: this.calculateTimePosition(milestoneDate)
-        });
-      }
-    },
-
     processTimelineData() {
       this.generateTimeMarkers();
       this.generateActivityBars();
@@ -469,31 +498,6 @@ export default {
           date
         });
       }
-    },
-
-    generateActivityBars() {
-      // Group posts by day
-      const dailyActivity = {};
-
-      this.timelineData.forEach((post) => {
-        const dateKey = post.date.toDateString();
-        dailyActivity[dateKey] = (dailyActivity[dateKey] || 0) + 1;
-      });
-
-      const maxActivity = Math.max(...Object.values(dailyActivity), 1);
-
-      this.activityBars = Object.entries(dailyActivity).map(
-        ([dateStr, count]) => {
-          const date = new Date(dateStr);
-          return {
-            date,
-            count,
-            height: (count / maxActivity) * 100,
-            position: this.calculateTimePosition(date),
-            color: this.getActivityColor(count, maxActivity)
-          };
-        }
-      );
     },
 
     generateUserGrowthChart() {
@@ -580,10 +584,6 @@ export default {
       };
     },
 
-    selectMilestone(milestone) {
-      this.selectTimePoint(milestone.date);
-    },
-
     clearSelection() {
       this.selectedTimePoint = null;
     },
@@ -641,7 +641,7 @@ export default {
 
     resetToFullRange() {
       const now = new Date();
-      const websiteLaunchDate = new Date("2025-07-01");
+      const websiteLaunchDate = new Date("2025-07-10");
 
       this.dateRange.start = websiteLaunchDate.toISOString().split("T")[0];
 
@@ -922,8 +922,7 @@ export default {
   }
 
   .activity-chart,
-  .growth-chart,
-  .milestones {
+  .growth-chart {
     border: 1px solid #ddd;
     border-radius: 12px;
     width: 100%;
@@ -931,8 +930,7 @@ export default {
   }
 
   .activity-chart h3,
-  .growth-chart h3,
-  .milestones h3 {
+  .growth-chart h3 {
     margin: 0 0 1.5rem 0;
     color: #333;
     font-size: 1.3rem;
@@ -949,6 +947,40 @@ export default {
     border-radius: 4px;
     width: 100%;
     overflow: visible; /* Allow tooltip to show outside container */
+  }
+
+  .activity-tooltip {
+    position: absolute;
+    background: rgba(0, 0, 0, 0.9);
+    color: white;
+    padding: 0.75rem;
+    border-radius: 6px;
+    font-size: 0.85rem;
+    pointer-events: none;
+    z-index: 1000;
+    white-space: nowrap;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+    font-family: Courier, sans-serif;
+  }
+
+  .activity-tooltip .tooltip-content {
+    text-align: left;
+  }
+
+  .activity-tooltip .tooltip-content strong {
+    display: block;
+    margin-bottom: 0.25rem;
+    color: #d73027;
+  }
+
+  .activity-tooltip .tooltip-content p {
+    margin: 0.1rem 0;
+    font-size: 0.8rem;
+  }
+
+  .activity-line {
+    width: 100%;
+    height: 100%;
   }
 
   .activity-bar {
