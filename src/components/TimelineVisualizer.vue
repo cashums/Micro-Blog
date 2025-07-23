@@ -700,7 +700,6 @@ export default {
   }
 
   .data-point:hover {
-    r: 6;
     filter: drop-shadow(0 0 4px #007acc);
   }
 
@@ -867,12 +866,13 @@ export default {
     height: 60px;
     border-bottom: 3px solid #333;
     margin-bottom: 4rem;
-    width: 100%;
+    margin-left: 2rem;
+    width: 95%;
   }
 
   .time-marker {
     position: absolute;
-    transform: translateX(-30%);
+    transform: translateX(-7%);
   }
 
   .marker-line {
