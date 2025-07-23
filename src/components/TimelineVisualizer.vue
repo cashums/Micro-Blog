@@ -113,6 +113,7 @@
                 <strong>{{ formatDate(userTooltip.date) }}</strong>
                 <p>{{ userTooltip.totalUsers }} Total Users</p>
                 <p>{{ userTooltip.newUsers }} New Users</p>
+                <p>{{ userTooltip.activeUsers }} Active Users</p>
               </div>
             </div>
 
@@ -272,7 +273,8 @@ export default {
         y: rect.top - containerRect.top - 60,
         date: point.date,
         totalUsers: point.totalUsers,
-        newUsers: point.users
+        newUsers: point.users, // Now correctly shows new users
+        activeUsers: point.activeUsers // Add active users info
       };
     },
 
@@ -333,30 +335,58 @@ export default {
     },
 
     async loadUserData() {
-      // For user growth, we'll approximate based on post creation dates
-      // In a real system, you'd track user registration dates
-      const userRegistrations = {};
+      // Track when each user first appeared (posted) on the platform
+      const userFirstAppearance = {};
+      const dailyNewUsers = {};
+      const dailyActiveUsers = {};
 
+      // Find first appearance date for each user
       for (const post of this.timelineData) {
-        const dateKey = post.date.toDateString();
-        if (!userRegistrations[dateKey]) {
-          userRegistrations[dateKey] = new Set();
+        const userId = post.author;
+        const postDate = post.date;
+        
+        if (!userFirstAppearance[userId] || postDate < userFirstAppearance[userId]) {
+          userFirstAppearance[userId] = postDate;
         }
-        userRegistrations[dateKey].add(post.author);
       }
 
-      this.userGrowthData = Object.entries(userRegistrations)
-        .map(([date, users]) => ({
-          date: new Date(date),
-          users: users.size,
-          totalUsers: 0 // Will be calculated below
-        }))
+      // Count new users and active users per day
+      for (const post of this.timelineData) {
+        const dateKey = post.date.toDateString();
+        const userId = post.author;
+        
+        // Track active users (users who posted on this day)
+        if (!dailyActiveUsers[dateKey]) {
+          dailyActiveUsers[dateKey] = new Set();
+        }
+        dailyActiveUsers[dateKey].add(userId);
+        
+        // Check if this is the user's first appearance (new user)
+        const firstAppearanceKey = userFirstAppearance[userId].toDateString();
+        if (firstAppearanceKey === dateKey) {
+          if (!dailyNewUsers[dateKey]) {
+            dailyNewUsers[dateKey] = new Set();
+          }
+          dailyNewUsers[dateKey].add(userId);
+        }
+      }
+
+      this.userGrowthData = Object.keys(dailyActiveUsers)
+        .map(dateKey => {
+          const date = new Date(dateKey);
+          return {
+            date: date,
+            users: dailyNewUsers[dateKey] ? dailyNewUsers[dateKey].size : 0, // New users on this day
+            activeUsers: dailyActiveUsers[dateKey].size, // Active users on this day
+            totalUsers: 0 // Will be calculated below
+          };
+        })
         .sort((a, b) => a.date - b.date);
 
-      // Calculate cumulative user count
+      // Calculate cumulative user count (total unique users up to this point)
       let totalUsers = 0;
       this.userGrowthData.forEach((point) => {
-        totalUsers += point.users;
+        totalUsers += point.users; // Add new users to running total
         point.totalUsers = totalUsers;
       });
     },
@@ -611,11 +641,13 @@ export default {
 
     resetToFullRange() {
       const now = new Date();
-      const sixMonthsAgo = new Date();
-      sixMonthsAgo.setMonth(now.getMonth() - 6);
+      const websiteLaunchDate = new Date("2025-07-01");
 
-      this.dateRange.start = sixMonthsAgo.toISOString().split("T")[0];
-      this.dateRange.end = now.toISOString().split("T")[0];
+      this.dateRange.start = websiteLaunchDate.toISOString().split("T")[0];
+
+      const endDate = new Date(now);
+      endDate.setDate(endDate.getDate() + 1);
+      this.dateRange.end = endDate.toISOString().split("T")[0];
 
       this.loadTimelineData();
     },
