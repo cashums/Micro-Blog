@@ -129,7 +129,7 @@ export default {
               authorEmail,
               timestamp: postData.timestamp?.toDate
                 ? postData.timestamp.toDate()
-                : new Date(postData.timestamp) // Ensure timestamp is converted
+                : new Date(postData.timestamp)
             };
           }
           return null;
@@ -316,11 +316,12 @@ export default {
       }
     },
 
-    formatDate(date) {
-      if (!date || isNaN(new Date(date).getTime())) {
-        return "Invalid Date";
-      }
-      return new Date(date).toLocaleDateString("en-US", {
+    formatDate(timestamp) {
+      if (!timestamp) return "Unknown";
+      const date = timestamp.toDate
+        ? timestamp.toDate()
+        : new Date(timestamp);
+      return date.toLocaleDateString("en-US", {
         year: "numeric",
         month: "long",
         day: "numeric"
@@ -328,7 +329,8 @@ export default {
     },
 
     formatTime(timestamp) {
-      const date = timestamp?.toDate
+      if (!timestamp) return "Unknown";
+      const date = timestamp.toDate
         ? timestamp.toDate()
         : new Date(timestamp);
       return date.toLocaleTimeString("en-US", {
