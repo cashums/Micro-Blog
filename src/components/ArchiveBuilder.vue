@@ -291,6 +291,8 @@ export default {
   mounted() {
     onAuthStateChanged(auth, async (user) => {
       this.currentUser = user;
+      this.loading = true; // Set loading to true when auth changes
+
       if (user) {
         await this.loadArchives();
       }
@@ -351,6 +353,7 @@ export default {
         console.log("Archive created successfully with ID:", archiveRef.id);
 
         // Reset form and reload archives
+        this.creatingArchive = false;
         this.resetForm();
         await this.loadArchives();
 
@@ -588,19 +591,75 @@ export default {
       return date.toLocaleTimeString();
     },
 
+    // async loadArchives() {
+
+    //   console.log("loadArchives called");
+    //   console.log("Current user:", this.currentUser);
+
+    //   if (!this.currentUser) {
+    //     console.log("No current user, skipping archive load");
+    //     return;
+    //   }
+
+    //   try {
+    //     console.log("Loading archives for user:", this.currentUser.uid);
+
+    //     const archivesQuery = query(
+    //       collection(firestore, "archives"),
+    //       where("createdBy", "==", this.currentUser.uid),
+    //       orderBy("createdAt", "desc")
+    //     );
+
+    //     const querySnapshot = await getDocs(archivesQuery);
+
+    //     this.archives = querySnapshot.docs.map((doc) => ({
+    //       id: doc.id,
+    //       ...doc.data()
+    //     }));
+
+    //     console.log("Loaded archives:", this.archives);
+    //     console.log("Filtered archives:", this.filteredArchives);
+    //   }
+    //   catch (error) {
+    //     console.error("Error loading archives:", error);
+    //     this.archives = [];
+    //   }
+    // },
+
     async loadArchives() {
+      console.log("loadArchives called");
+      console.log("Current user:", this.currentUser);
+
+      if (!this.currentUser) {
+        console.log("No current user, skipping archive load");
+        return;
+      }
+
       try {
+        console.log("Loading archives for user:", this.currentUser.uid);
+
+        // Query all archives for this user and sort by creation date only
         const archivesQuery = query(
           collection(firestore, "archives"),
-          where("createdBy", "==", this.currentUser.uid),
-          orderBy("createdAt", "desc")
+          where("createdBy", "==", this.currentUser.uid)
         );
 
         const querySnapshot = await getDocs(archivesQuery);
+
         this.archives = querySnapshot.docs.map((doc) => ({
           id: doc.id,
           ...doc.data()
         }));
+
+        // Sort client-side - this is more flexible anyway
+        this.archives.sort((a, b) => {
+          const dateA = a.createdAt?.toDate ? a.createdAt.toDate() : new Date(a.createdAt);
+          const dateB = b.createdAt?.toDate ? b.createdAt.toDate() : new Date(b.createdAt);
+          return dateB - dateA;
+        });
+
+        console.log("Loaded archives:", this.archives);
+        console.log("Filtered archives:", this.filteredArchives);
       }
       catch (error) {
         console.error("Error loading archives:", error);
