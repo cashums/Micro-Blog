@@ -211,10 +211,32 @@ export default {
   }
 
   .logout-box {
-    background-color: #d7c2a2;
-    padding: 1rem;
-    border-radius: 12px;
-    width: 250px;
-    text-align: center;
+    padding: 1.5rem; 
+    border-radius: 10px; 
+    width: 300px; 
+    text-align: center; 
+  }
+
+  .logout-box .placeholder-text {
+    font-family: Helvetica, sans-serif; 
+    font-size: 1.2rem; 
+    font-weight: bold; 
+    color: black; 
+    font-style: italic;
+    margin-bottom: 1rem; 
+  }
+
+  .logout-box button {
+    padding: 0.75rem 1.5rem; 
+    background-color: red; 
+    border: none; 
+    border-radius: 8px; 
+    cursor: pointer; 
+    font-size: 1rem; 
+    font-weight: bold; 
+  }
+
+  .logout-box button:hover {
+    background-color: maroon; 
   }
 </style>
